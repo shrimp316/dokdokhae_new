@@ -11,6 +11,15 @@ const notoSans = Noto_Sans_KR({ subsets: ['latin'], weight: ['300', '400', '500'
 export const metadata = {
   title: '너 참 독독하다',
   description: '우리 독서모임',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '독독하다',
+  },
+  icons: {
+    apple: '/icon-192.png',
+  },
 };
 
 export const viewport = {
