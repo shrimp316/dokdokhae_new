@@ -2,16 +2,17 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/AuthContext';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
-const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || 'admin0000';
-
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(false);
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState('');
+  const { user, profile, loading } = useAuth();
+  const router = useRouter();
+  const isAdmin = profile?.role === 'admin';
+
   const [tab, setTab] = useState('books');
 
   // 책
@@ -35,8 +36,8 @@ export default function AdminPage() {
   const [newPrefix, setNewPrefix] = useState('');
 
   useEffect(() => {
-    if (authed) { loadAll(); }
-  }, [authed, tab]);
+    if (isAdmin) { loadAll(); }
+  }, [isAdmin, tab]);
 
   function loadAll() {
     loadBooks(); loadMeetings(); loadNotices(); loadPrefixes();
@@ -175,15 +176,23 @@ export default function AdminPage() {
   const h3Style = { fontSize: 15, fontWeight: 600, color: 'var(--accent)', marginBottom: 14 };
   const listItemStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--line)' };
 
-  if (!authed) return (
+  if (loading) return <p className="empty-msg">로딩 중…</p>;
+
+  if (!user) return (
     <div style={{ maxWidth: 360, margin: '40px auto' }}>
       <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 20 }}>🔒 관리자</h2>
-        <input type="password" placeholder="비밀번호" value={pw} onChange={e => setPw(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { pw === ADMIN_PASS ? (setAuthed(true), setErr('')) : setErr('비밀번호가 틀렸어요.'); }}}
-          style={{ marginBottom: 10 }} />
-        {err && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 8 }}>{err}</p>}
-        <button className="btn-primary" onClick={() => pw === ADMIN_PASS ? (setAuthed(true), setErr('')) : setErr('비밀번호가 틀렸어요.')}>로그인</button>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16 }}>🔒 관리자</h2>
+        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 16 }}>로그인이 필요해요.</p>
+        <button className="btn-primary" onClick={() => router.push('/login')}>로그인하러 가기</button>
+      </div>
+    </div>
+  );
+
+  if (!isAdmin) return (
+    <div style={{ maxWidth: 360, margin: '40px auto' }}>
+      <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16 }}>🔒 권한 없음</h2>
+        <p style={{ fontSize: 14, color: 'var(--muted)' }}>관리자 계정으로 로그인해주세요.</p>
       </div>
     </div>
   );
@@ -194,7 +203,6 @@ export default function AdminPage() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)' }}>⚙️ 관리자</h1>
-        <button className="btn-sm btn-outline" onClick={() => setAuthed(false)}>로그아웃</button>
       </div>
 
       {/* 탭 */}
