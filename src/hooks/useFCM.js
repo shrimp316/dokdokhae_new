@@ -14,33 +14,47 @@ export function useFCM() {
     }
   }, []);
 
-  async function requestPermission() {
-    if (!user || !('Notification' in window) || !('serviceWorker' in navigator)) return;
-    try {
-      const result = await Notification.requestPermission();
-      setPermission(result);
-      if (result !== 'granted') return;
+  // 이미 허용된 상태면 자동으로 토큰 저장
+  useEffect(() => {
+    if (!user || typeof window === 'undefined') return;
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (Notification.permission === 'granted') saveToken();
+  }, [user]);
 
-      const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      await navigator.serviceWorker.ready; // 활성화 대기
+  async function saveToken() {
+    try {
+      await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      await navigator.serviceWorker.ready;
+      const sw = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
       const messaging = getMessaging(app);
       const token = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         serviceWorkerRegistration: sw,
       });
-
       if (token) {
         await fetch('/api/fcm-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, uid: user.uid }),
         });
+        console.log('FCM 토큰 저장 완료');
       }
-
       onMessage(messaging, (payload) => {
         const { title, body } = payload.notification || {};
         if (title) new Notification(title, { body, icon: '/icon-192.png' });
       });
+    } catch (e) {
+      console.warn('FCM 토큰 저장 실패:', e);
+    }
+  }
+
+  async function requestPermission() {
+    if (!user || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result !== 'granted') return;
+      await saveToken();
     } catch (e) {
       console.warn('FCM 초기화 실패:', e);
     }
