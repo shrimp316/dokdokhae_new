@@ -22,6 +22,7 @@ export function useFCM() {
       if (result !== 'granted') return;
 
       const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      await navigator.serviceWorker.ready; // 활성화 대기
       const messaging = getMessaging(app);
       const token = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
