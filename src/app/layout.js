@@ -12,24 +12,21 @@ export const metadata = {
   title: '너 참 독독하다',
   description: '우리 독서모임',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: '독독하다',
-  },
   icons: {
     apple: '/icon-192.png',
   },
 };
 
-
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="ko" className={`${notoSerif.variable} ${notoSans.variable}`}>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-      </head>
       <body>
         <AuthProvider>
           <div className="app-layout">
