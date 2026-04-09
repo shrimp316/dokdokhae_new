@@ -31,6 +31,9 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko" className={`${notoSerif.variable} ${notoSans.variable}`}>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+      </head>
       <body>
         <AuthProvider>
           <div className="app-layout">
