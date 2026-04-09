@@ -69,7 +69,7 @@ export default function HomePage() {
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 700, lineHeight: 1.4, marginBottom: 6 }}>{featured.title}</h2>
               <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>{featured.author}</p>
               {featured.genre && <span className="tag">{featured.genre}</span>}
-              {featured.description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>{featured.description.slice(0, 120)}…</p>}
+              {featured.description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>{featured.description}</p>}
             </div>
           </div>
         </div>
