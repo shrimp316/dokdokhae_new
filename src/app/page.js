@@ -79,16 +79,16 @@ export default function HomePage() {
 
       {/* D-day */}
       {nextMeeting && (
-        <div className="dday-card">
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, minWidth: 72 }}>{dday}</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>
-              {formatDateTime(nextMeeting.date)}{nextMeeting.dateEnd ? ` ~ ${formatDateTime(nextMeeting.dateEnd)}` : ''}
-            </div>
-            {nextMeeting.location && <div style={{ fontSize: 12, opacity: 0.8 }}>{nextMeeting.location}</div>}
-          </div>
-        </div>
-      )}
+  <div className="dday-card">
+    <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 700, minWidth: 60, flexShrink: 0 }}>{dday}</div>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {formatDateTime(nextMeeting.date)}{nextMeeting.dateEnd ? ` ~ ${formatDateTime(nextMeeting.dateEnd)}` : ''}
+      </div>
+      {nextMeeting.location && <div style={{ fontSize: 12, opacity: 0.8 }}>{nextMeeting.location}</div>}
+    </div>
+  </div>
+)}
 
       {/* 기타 공지 버튼 */}
       <Link href="/notice" style={{

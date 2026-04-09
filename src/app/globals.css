@@ -3,7 +3,6 @@ html, body {
   overflow-x: hidden;
   max-width: 100vw;
 }
-
 :root {
   --bg: #faf8f5;
   --card: #ffffff;
