@@ -46,6 +46,8 @@ export default function AdminPage() {
   const [newQuestion, setNewQuestion] = useState('');
   const [aiQLoading, setAiQLoading] = useState(false);
   const [aiQResults, setAiQResults] = useState([]);
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [editQuestionText, setEditQuestionText] = useState('');
 
   // 이 주/달의 글
   const [passages, setPassages] = useState([]);
@@ -53,6 +55,9 @@ export default function AdminPage() {
   const [newPassage, setNewPassage] = useState({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
   const [newPassageQuestion, setNewPassageQuestion] = useState('');
   const [aiPassageLoading, setAiPassageLoading] = useState(false);
+  const [editingPassageId, setEditingPassageId] = useState(null);
+  const [editPassage, setEditPassage] = useState({ bookTitle: '', bookAuthor: '', passage: '', questions: [], source: '' });
+  const [editPassageQuestion, setEditPassageQuestion] = useState('');
 
   useEffect(() => {
     if (isAdmin) { loadAll(); }
@@ -131,6 +136,13 @@ export default function AdminPage() {
     setAiQLoading(false);
   }
 
+  async function saveEditQuestion(id) {
+    if (!editQuestionText.trim()) return;
+    await updateDoc(doc(db, 'bookQuestions', id), { question: editQuestionText.trim() });
+    setEditingQuestionId(null);
+    loadBookQuestions(selectedBookForQ);
+  }
+
   async function saveAIQuestion(q) {
     if (!selectedBookForQ) return;
     await addDoc(collection(db, 'bookQuestions'), {
@@ -188,6 +200,20 @@ export default function AdminPage() {
       for (const d of prev.docs) await updateDoc(doc(db, 'featuredPassages', d.id), { isActive: false });
     }
     await updateDoc(doc(db, 'featuredPassages', id), { isActive: !currentActive });
+    loadPassages();
+  }
+
+  async function saveEditPassage(id) {
+    if (!editPassage.bookTitle.trim()) { alert('책 제목을 입력해주세요.'); return; }
+    if (!editPassage.passage.trim()) { alert('발췌문을 입력해주세요.'); return; }
+    await updateDoc(doc(db, 'featuredPassages', id), {
+      bookTitle: editPassage.bookTitle,
+      bookAuthor: editPassage.bookAuthor,
+      passage: editPassage.passage,
+      questions: editPassage.questions,
+      source: editPassage.source,
+    });
+    setEditingPassageId(null);
     loadPassages();
   }
 
@@ -493,10 +519,22 @@ export default function AdminPage() {
                   <p style={{ fontSize: 13, color: 'var(--muted)' }}>등록된 질문이 없어요.</p>
                 ) : (
                   bookQuestions.map((q, i) => (
-                    <div key={q.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                      <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0, marginTop: 2 }}>{i + 1}.</span>
-                      <span style={{ fontSize: 13, flex: 1, lineHeight: 1.6 }}>{q.question}</span>
-                      <button className="btn-sm btn-danger" onClick={() => deleteQuestion(q.id)} style={{ flexShrink: 0 }}>삭제</button>
+                    <div key={q.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+                      {editingQuestionId === q.id ? (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input value={editQuestionText} onChange={e => setEditQuestionText(e.target.value)}
+                            style={{ flex: 1, fontSize: 13 }} onKeyDown={e => e.key === 'Enter' && saveEditQuestion(q.id)} />
+                          <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }} onClick={() => saveEditQuestion(q.id)}>완료</button>
+                          <button className="btn-sm btn-outline" onClick={() => setEditingQuestionId(null)}>취소</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0, marginTop: 2 }}>{i + 1}.</span>
+                          <span style={{ fontSize: 13, flex: 1, lineHeight: 1.6 }}>{q.question}</span>
+                          <button className="btn-sm btn-outline" onClick={() => { setEditingQuestionId(q.id); setEditQuestionText(q.question); }} style={{ flexShrink: 0 }}>수정</button>
+                          <button className="btn-sm btn-danger" onClick={() => deleteQuestion(q.id)} style={{ flexShrink: 0 }}>삭제</button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -624,23 +662,61 @@ export default function AdminPage() {
             ) : (
               passages.map(p => (
                 <div key={p.id} style={{ ...listItemStyle, alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 10, background: p.period === 'weekly' ? 'var(--accent2)' : 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>
-                      {p.period === 'weekly' ? '주간' : '월간'}
-                    </span>
-                    <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{p.periodKey}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bookTitle}</span>
-                    <button className="btn-sm btn-outline" onClick={() => togglePassageActive(p.id, p.isActive)}
-                      style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '' }}>
-                      {p.isActive ? '✅ 노출 중' : '노출'}
-                    </button>
-                    <button className="btn-sm btn-danger" onClick={() => deletePassage(p.id)} style={{ flexShrink: 0 }}>삭제</button>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', paddingLeft: 0, lineHeight: 1.5 }}>
-                    "{p.passage?.slice(0, 60)}{p.passage?.length > 60 ? '…' : ''}"
-                  </p>
-                  {p.questions?.length > 0 && (
-                    <p style={{ fontSize: 11, color: 'var(--accent)' }}>💬 질문 {p.questions.length}개</p>
+                  {editingPassageId === p.id ? (
+                    /* 수정 폼 */
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                        <input placeholder="책 제목 *" value={editPassage.bookTitle} onChange={e => setEditPassage({...editPassage, bookTitle: e.target.value})} style={{ flex: 2 }} />
+                        <input placeholder="저자" value={editPassage.bookAuthor} onChange={e => setEditPassage({...editPassage, bookAuthor: e.target.value})} style={{ flex: 1 }} />
+                      </div>
+                      <textarea placeholder="발췌문 *" value={editPassage.passage} onChange={e => setEditPassage({...editPassage, passage: e.target.value})}
+                        style={{ marginBottom: 8, minHeight: 100, resize: 'vertical' }} />
+                      <input placeholder="출처 (선택)" value={editPassage.source} onChange={e => setEditPassage({...editPassage, source: e.target.value})} style={{ marginBottom: 8 }} />
+                      {/* 질문 수정 */}
+                      <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>질문</p>
+                      {editPassage.questions.map((q, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+                          <button onClick={() => setEditPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+                        </div>
+                      ))}
+                      {editPassage.questions.length < 5 && (
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                          <input placeholder="질문 추가" value={editPassageQuestion} onChange={e => setEditPassageQuestion(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && editPassageQuestion.trim()) { setEditPassage(prev => ({...prev, questions: [...prev.questions, editPassageQuestion.trim()]})); setEditPassageQuestion(''); }}}
+                            style={{ flex: 1, fontSize: 13 }} />
+                          <button className="btn-sm btn-outline" onClick={() => { if (editPassageQuestion.trim()) { setEditPassage(prev => ({...prev, questions: [...prev.questions, editPassageQuestion.trim()]})); setEditPassageQuestion(''); } }}>추가</button>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="btn-sm btn-outline" onClick={() => { setEditingPassageId(null); setEditPassageQuestion(''); }}>취소</button>
+                        <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }} onClick={() => saveEditPassage(p.id)}>저장</button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 목록 뷰 */
+                    <>
+                      <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 10, background: p.period === 'weekly' ? 'var(--accent2)' : 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>
+                          {p.period === 'weekly' ? '주간' : '월간'}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{p.periodKey}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bookTitle}</span>
+                        <button className="btn-sm btn-outline" onClick={() => togglePassageActive(p.id, p.isActive)}
+                          style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '' }}>
+                          {p.isActive ? '✅ 노출 중' : '노출'}
+                        </button>
+                        <button className="btn-sm btn-outline" onClick={() => { setEditingPassageId(p.id); setEditPassage({ bookTitle: p.bookTitle || '', bookAuthor: p.bookAuthor || '', passage: p.passage || '', questions: p.questions || [], source: p.source || '' }); setEditPassageQuestion(''); }} style={{ flexShrink: 0 }}>수정</button>
+                        <button className="btn-sm btn-danger" onClick={() => deletePassage(p.id)} style={{ flexShrink: 0 }}>삭제</button>
+                      </div>
+                      <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
+                        "{p.passage?.slice(0, 60)}{p.passage?.length > 60 ? '…' : ''}"
+                      </p>
+                      {p.questions?.length > 0 && (
+                        <p style={{ fontSize: 11, color: 'var(--accent)' }}>💬 질문 {p.questions.length}개</p>
+                      )}
+                    </>
                   )}
                 </div>
               ))
