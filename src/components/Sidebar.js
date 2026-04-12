@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 const NAV_ITEMS = [
   { href: '/', icon: '🏠', label: '홈' },
   { href: '/books', icon: '📚', label: '도서 목록' },
+  { href: '/featured', icon: '📝', label: '이 주의 글' },
   { href: '/schedule', icon: '📅', label: '모임 일정' },
   { href: '/reviews', icon: '✏️', label: '내 감상평' },
   null,

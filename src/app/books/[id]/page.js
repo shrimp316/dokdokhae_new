@@ -16,6 +16,7 @@ export default function BookReviewsPage({ params }) {
 
   const [book, setBook] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [content, setContent] = useState('');
   const [rating, setRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -30,10 +31,16 @@ export default function BookReviewsPage({ params }) {
       if (snap.exists()) setBook({ id: snap.id, ...snap.data() });
     });
     loadReviews();
+    loadQuestions();
     // 임시저장 불러오기
     const saved = localStorage.getItem(`draft-review-${id}`);
     if (saved) setDraft(saved);
   }, [id]);
+
+  async function loadQuestions() {
+    const snap = await getDocs(query(collection(db, 'bookQuestions'), where('bookId', '==', id), orderBy('order', 'asc')));
+    setQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }
 
   async function loadReviews() {
     const snap = await getDocs(query(collection(db, 'reviews'), where('bookId', '==', id), orderBy('createdAt', 'desc')));
@@ -108,6 +115,21 @@ export default function BookReviewsPage({ params }) {
           {book.genre && <span className="tag" style={{ marginTop: 6, display: 'inline-block' }}>{book.genre}</span>}
         </div>
       </div>
+
+      {/* 토론 질문 */}
+      {questions.length > 0 && (
+        <div className="card" style={{ padding: 18, marginBottom: 20 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 14 }}>💬 독서모임 토론 질문</h2>
+          <ol style={{ paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {questions.map((q, i) => (
+              <li key={q.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: 17, color: 'var(--accent)', flexShrink: 0, lineHeight: 1.4 }}>{i + 1}.</span>
+                <span style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)' }}>{q.question}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {/* 감상평 작성 */}
       {user ? (

@@ -40,12 +40,25 @@ export default function AdminPage() {
   const [newNotif, setNewNotif] = useState({ title: '', body: '', date: '', url: '/' });
   const [sendingNow, setSendingNow] = useState(false);
 
+  // 책 토론 질문
+  const [selectedBookForQ, setSelectedBookForQ] = useState('');
+  const [bookQuestions, setBookQuestions] = useState([]);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [aiQLoading, setAiQLoading] = useState(false);
+  const [aiQResults, setAiQResults] = useState([]);
+
+  // 이 주/달의 글
+  const [passages, setPassages] = useState([]);
+  const [newPassage, setNewPassage] = useState({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
+  const [newPassageQuestion, setNewPassageQuestion] = useState('');
+  const [aiPassageLoading, setAiPassageLoading] = useState(false);
+
   useEffect(() => {
     if (isAdmin) { loadAll(); }
   }, [isAdmin, tab]);
 
   function loadAll() {
-    loadBooks(); loadMeetings(); loadNotices(); loadPrefixes(); loadScheduled();
+    loadBooks(); loadMeetings(); loadNotices(); loadPrefixes(); loadScheduled(); loadPassages();
   }
 
   async function loadBooks() {
@@ -72,6 +85,125 @@ export default function AdminPage() {
       const snap = await getDocs(query(collection(db, 'scheduledNotifications'), orderBy('date', 'asc')));
       setScheduled(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch {}
+  }
+
+  // 책 토론 질문 함수
+  async function loadBookQuestions(bookId) {
+    if (!bookId) { setBookQuestions([]); return; }
+    const snap = await getDocs(query(collection(db, 'bookQuestions'), where('bookId', '==', bookId), orderBy('order', 'asc')));
+    setBookQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }
+
+  async function addQuestion() {
+    if (!selectedBookForQ) { alert('책을 선택해주세요.'); return; }
+    if (!newQuestion.trim()) { alert('질문을 입력해주세요.'); return; }
+    await addDoc(collection(db, 'bookQuestions'), {
+      bookId: selectedBookForQ, question: newQuestion.trim(),
+      order: bookQuestions.length, createdAt: serverTimestamp(), createdBy: user.uid,
+    });
+    setNewQuestion('');
+    loadBookQuestions(selectedBookForQ);
+  }
+
+  async function deleteQuestion(id) {
+    if (!confirm('질문을 삭제할까요?')) return;
+    await deleteDoc(doc(db, 'bookQuestions', id));
+    loadBookQuestions(selectedBookForQ);
+  }
+
+  async function generateAIQuestions() {
+    if (!selectedBookForQ) { alert('책을 선택해주세요.'); return; }
+    const book = books.find(b => b.id === selectedBookForQ);
+    if (!book) return;
+    setAiQLoading(true);
+    setAiQResults([]);
+    try {
+      const res = await fetch('/api/ai-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: book.title, author: book.author, description: book.description }),
+      });
+      const data = await res.json();
+      if (data.error) { alert('AI 오류: ' + data.error); return; }
+      setAiQResults(data.questions || []);
+    } catch (e) { alert('생성 실패: ' + e.message); }
+    setAiQLoading(false);
+  }
+
+  async function saveAIQuestion(q) {
+    if (!selectedBookForQ) return;
+    await addDoc(collection(db, 'bookQuestions'), {
+      bookId: selectedBookForQ, question: q,
+      order: bookQuestions.length, createdAt: serverTimestamp(), createdBy: user.uid,
+    });
+    loadBookQuestions(selectedBookForQ);
+  }
+
+  // 이 주/달의 글 함수
+  async function loadPassages() {
+    try {
+      const snap = await getDocs(query(collection(db, 'featuredPassages'), orderBy('createdAt', 'desc')));
+      setPassages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch {}
+  }
+
+  function getPeriodKey(period) {
+    const now = new Date();
+    if (period === 'monthly') {
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+    // ISO week number
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  async function addPassage() {
+    if (!newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
+    if (!newPassage.passage) { alert('발췌문을 입력해주세요.'); return; }
+    const periodKey = getPeriodKey(newPassage.period);
+    await addDoc(collection(db, 'featuredPassages'), {
+      ...newPassage, periodKey, year: new Date().getFullYear(),
+      isActive: false, createdAt: serverTimestamp(),
+    });
+    setNewPassage({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
+    setNewPassageQuestion('');
+    loadPassages();
+    alert('등록되었어요!');
+  }
+
+  async function deletePassage(id) {
+    if (!confirm('삭제할까요?')) return;
+    await deleteDoc(doc(db, 'featuredPassages', id));
+    loadPassages();
+  }
+
+  async function togglePassageActive(id, currentActive) {
+    if (!currentActive) {
+      const prev = await getDocs(query(collection(db, 'featuredPassages'), where('isActive', '==', true)));
+      for (const d of prev.docs) await updateDoc(doc(db, 'featuredPassages', d.id), { isActive: false });
+    }
+    await updateDoc(doc(db, 'featuredPassages', id), { isActive: !currentActive });
+    loadPassages();
+  }
+
+  async function generateAIPassage() {
+    if (!newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
+    setAiPassageLoading(true);
+    try {
+      const res = await fetch('/api/ai-passage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newPassage.bookTitle, author: newPassage.bookAuthor, description: '' }),
+      });
+      const data = await res.json();
+      if (data.error) { alert('AI 오류: ' + data.error); return; }
+      setNewPassage(prev => ({ ...prev, passage: data.passage || prev.passage, questions: data.questions || prev.questions }));
+    } catch (e) { alert('생성 실패: ' + e.message); }
+    setAiPassageLoading(false);
   }
 
   async function addScheduledNotif() {
@@ -239,7 +371,7 @@ export default function AdminPage() {
     </div>
   );
 
-  const TABS = [['books','📖 책'],['meetings','📅 일정'],['notices','📢 공지'],['prefixes','🏷️ 글머리'],['notifications','🔔 알림']];
+  const TABS = [['books','📖 책'],['questions','💬 토론질문'],['featured','📝 이 주의 글'],['meetings','📅 일정'],['notices','📢 공지'],['prefixes','🏷️ 글머리'],['notifications','🔔 알림']];
 
   return (
     <div>
@@ -306,6 +438,156 @@ export default function AdminPage() {
                 <button className="btn-sm btn-danger" onClick={() => deleteBook(b.id)}>삭제</button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 토론 질문 관리 */}
+      {tab === 'questions' && (
+        <div style={sectionStyle}>
+          <h3 style={h3Style}>💬 책 토론 질문 관리</h3>
+
+          {/* 책 선택 */}
+          <select value={selectedBookForQ} onChange={e => { setSelectedBookForQ(e.target.value); loadBookQuestions(e.target.value); setAiQResults([]); }} style={{ marginBottom: 12 }}>
+            <option value="">책을 선택하세요</option>
+            {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+          </select>
+
+          {selectedBookForQ && (
+            <>
+              {/* AI 질문 생성 */}
+              <button className="btn-sm btn-outline" onClick={generateAIQuestions} disabled={aiQLoading}
+                style={{ marginBottom: 12, width: '100%', padding: '10px 0' }}>
+                {aiQLoading ? '🤖 AI가 질문을 생성하고 있어요…' : '🤖 AI 질문 5개 자동 생성'}
+              </button>
+
+              {/* AI 결과 */}
+              {aiQResults.length > 0 && (
+                <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>AI가 생성한 질문 — 저장할 항목을 선택해주세요</p>
+                  {aiQResults.map((q, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, flex: 1, lineHeight: 1.6 }}>{q}</span>
+                      <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff', flexShrink: 0 }} onClick={() => saveAIQuestion(q)}>저장</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 직접 입력 */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <input placeholder="질문을 직접 입력하세요" value={newQuestion} onChange={e => setNewQuestion(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addQuestion()} style={{ flex: 1 }} />
+                <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff', flexShrink: 0 }} onClick={addQuestion}>추가</button>
+              </div>
+
+              {/* 등록된 질문 목록 */}
+              <div>
+                {bookQuestions.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--muted)' }}>등록된 질문이 없어요.</p>
+                ) : (
+                  bookQuestions.map((q, i) => (
+                    <div key={q.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+                      <span style={{ fontSize: 13, color: 'var(--muted)', flexShrink: 0, marginTop: 2 }}>{i + 1}.</span>
+                      <span style={{ fontSize: 13, flex: 1, lineHeight: 1.6 }}>{q.question}</span>
+                      <button className="btn-sm btn-danger" onClick={() => deleteQuestion(q.id)} style={{ flexShrink: 0 }}>삭제</button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* 이 주의 글 관리 */}
+      {tab === 'featured' && (
+        <div style={sectionStyle}>
+          <h3 style={h3Style}>📝 이 주/달의 글 등록</h3>
+
+          {/* 책 정보 */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input placeholder="책 제목 *" value={newPassage.bookTitle} onChange={e => setNewPassage({...newPassage, bookTitle: e.target.value})} style={{ flex: 2 }} />
+            <input placeholder="저자" value={newPassage.bookAuthor} onChange={e => setNewPassage({...newPassage, bookAuthor: e.target.value})} style={{ flex: 1 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <select value={newPassage.period} onChange={e => setNewPassage({...newPassage, period: e.target.value})} style={{ flex: 1 }}>
+              <option value="weekly">📅 주간</option>
+              <option value="monthly">📆 월간</option>
+            </select>
+            <select value={newPassage.bookId} onChange={e => setNewPassage({...newPassage, bookId: e.target.value})} style={{ flex: 2 }}>
+              <option value="">시스템 내 책 연결 (선택사항)</option>
+              {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+            </select>
+          </div>
+
+          {/* AI 발췌문 생성 */}
+          <button className="btn-sm btn-outline" onClick={generateAIPassage} disabled={aiPassageLoading}
+            style={{ marginBottom: 8, width: '100%', padding: '10px 0' }}>
+            {aiPassageLoading ? '🤖 AI가 발췌문을 생성하고 있어요…' : '🤖 AI 발췌문 + 질문 자동 생성'}
+          </button>
+
+          {/* 발췌문 */}
+          <textarea placeholder="발췌문 *" value={newPassage.passage}
+            onChange={e => setNewPassage({...newPassage, passage: e.target.value})}
+            style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
+
+          <input placeholder="출처 표기 (선택)" value={newPassage.source} onChange={e => setNewPassage({...newPassage, source: e.target.value})} style={{ marginBottom: 12 }} />
+
+          {/* 관련 질문 */}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>관련 질문 (최대 5개)</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input placeholder="질문 추가" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim() && newPassage.questions.length < 5) {
+                setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                setNewPassageQuestion('');
+              }}} style={{ flex: 1 }} />
+            <button className="btn-sm btn-outline" onClick={() => {
+              if (newPassageQuestion.trim() && newPassage.questions.length < 5) {
+                setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                setNewPassageQuestion('');
+              }
+            }}>추가</button>
+          </div>
+          {newPassage.questions.map((q, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+              <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+            </div>
+          ))}
+
+          <button className="btn-primary" onClick={addPassage} style={{ marginTop: 12 }}>등록</button>
+
+          {/* 등록된 목록 */}
+          <div style={{ marginTop: 20 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)', marginBottom: 10 }}>등록된 발췌문</p>
+            {passages.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--muted)' }}>아직 등록된 발췌문이 없어요.</p>
+            ) : (
+              passages.map(p => (
+                <div key={p.id} style={{ ...listItemStyle, alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, background: p.period === 'weekly' ? 'var(--accent2)' : 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>
+                      {p.period === 'weekly' ? '주간' : '월간'}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{p.periodKey}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bookTitle}</span>
+                    <button className="btn-sm btn-outline" onClick={() => togglePassageActive(p.id, p.isActive)}
+                      style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '' }}>
+                      {p.isActive ? '✅ 노출 중' : '노출'}
+                    </button>
+                    <button className="btn-sm btn-danger" onClick={() => deletePassage(p.id)} style={{ flexShrink: 0 }}>삭제</button>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', paddingLeft: 0, lineHeight: 1.5 }}>
+                    "{p.passage?.slice(0, 60)}{p.passage?.length > 60 ? '…' : ''}"
+                  </p>
+                  {p.questions?.length > 0 && (
+                    <p style={{ fontSize: 11, color: 'var(--accent)' }}>💬 질문 {p.questions.length}개</p>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
