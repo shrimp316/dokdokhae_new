@@ -82,22 +82,24 @@ export default function HomePage() {
 
       {/* 이달의 책 */}
       {featured ? (
-        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--accent2)', marginBottom: 14 }}>📖 이 달의 책</div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            {featured.cover ? (
-              <img src={featured.cover} alt={featured.title} style={{ width: 90, height: 130, objectFit: 'cover', borderRadius: 6, boxShadow: '2px 4px 12px rgba(0,0,0,0.15)', flexShrink: 0 }} />
-            ) : (
-              <div style={{ width: 90, height: 130, background: 'var(--tag-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, borderRadius: 6, flexShrink: 0 }}>📚</div>
-            )}
-            <div>
-              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 700, lineHeight: 1.4, marginBottom: 6 }}>{featured.title}</h2>
-              <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>{featured.author}</p>
-              {featured.genre && <span className="tag">{featured.genre}</span>}
-              {featured.description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>{featured.description}</p>}
+        <Link href={`/books/${featured.id}`} style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
+          <div className="card" style={{ padding: 20, cursor: 'pointer' }}>
+            <div style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--accent2)', marginBottom: 14 }}>📖 이 달의 책</div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+              {featured.cover ? (
+                <img src={featured.cover} alt={featured.title} style={{ width: 90, height: 130, objectFit: 'cover', borderRadius: 6, boxShadow: '2px 4px 12px rgba(0,0,0,0.15)', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 90, height: 130, background: 'var(--tag-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, borderRadius: 6, flexShrink: 0 }}>📚</div>
+              )}
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 700, lineHeight: 1.4, marginBottom: 6 }}>{featured.title}</h2>
+                <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>{featured.author}</p>
+                {featured.genre && <span className="tag">{featured.genre}</span>}
+                {featured.description && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, lineHeight: 1.5 }}>{featured.description}</p>}
+              </div>
             </div>
           </div>
-        </div>
+        </Link>
       ) : (
         <div className="card" style={{ padding: 30, textAlign: 'center', color: 'var(--muted)', marginBottom: 16 }}>이 달의 책이 아직 선정되지 않았어요.</div>
       )}
