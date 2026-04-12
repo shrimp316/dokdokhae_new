@@ -49,6 +49,7 @@ export default function AdminPage() {
 
   // 이 주/달의 글
   const [passages, setPassages] = useState([]);
+  const [passageMode, setPassageMode] = useState('ai'); // 'ai' | 'manual'
   const [newPassage, setNewPassage] = useState({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
   const [newPassageQuestion, setNewPassageQuestion] = useState('');
   const [aiPassageLoading, setAiPassageLoading] = useState(false);
@@ -162,7 +163,7 @@ export default function AdminPage() {
   }
 
   async function addPassage() {
-    if (!newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
+    if (passageMode === 'manual' && !newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
     if (!newPassage.passage) { alert('발췌문을 입력해주세요.'); return; }
     const periodKey = getPeriodKey(newPassage.period);
     await addDoc(collection(db, 'featuredPassages'), {
@@ -191,17 +192,22 @@ export default function AdminPage() {
   }
 
   async function generateAIPassage() {
-    if (!newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
     setAiPassageLoading(true);
     try {
       const res = await fetch('/api/ai-passage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newPassage.bookTitle, author: newPassage.bookAuthor, description: '' }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.error) { alert('AI 오류: ' + data.error); return; }
-      setNewPassage(prev => ({ ...prev, passage: data.passage || prev.passage, questions: data.questions || prev.questions }));
+      setNewPassage(prev => ({
+        ...prev,
+        bookTitle: data.bookTitle || prev.bookTitle,
+        bookAuthor: data.bookAuthor || prev.bookAuthor,
+        passage: data.passage || prev.passage,
+        questions: data.questions || prev.questions,
+      }));
     } catch (e) { alert('생성 실패: ' + e.message); }
     setAiPassageLoading(false);
   }
@@ -505,57 +511,108 @@ export default function AdminPage() {
         <div style={sectionStyle}>
           <h3 style={h3Style}>📝 이 주/달의 글 등록</h3>
 
-          {/* 책 정보 */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input placeholder="책 제목 *" value={newPassage.bookTitle} onChange={e => setNewPassage({...newPassage, bookTitle: e.target.value})} style={{ flex: 2 }} />
-            <input placeholder="저자" value={newPassage.bookAuthor} onChange={e => setNewPassage({...newPassage, bookAuthor: e.target.value})} style={{ flex: 1 }} />
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <select value={newPassage.period} onChange={e => setNewPassage({...newPassage, period: e.target.value})} style={{ flex: 1 }}>
-              <option value="weekly">📅 주간</option>
-              <option value="monthly">📆 월간</option>
-            </select>
-            <select value={newPassage.bookId} onChange={e => setNewPassage({...newPassage, bookId: e.target.value})} style={{ flex: 2 }}>
-              <option value="">시스템 내 책 연결 (선택사항)</option>
-              {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
-            </select>
+          {/* AI / 직접 입력 모드 선택 */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+            {[['ai', '🤖 AI 자동 생성'], ['manual', '✏️ 직접 입력']].map(([key, label]) => (
+              <button key={key} onClick={() => { setPassageMode(key); setNewPassage({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' }); setNewPassageQuestion(''); }}
+                style={{ flex: 1, padding: '9px 0', border: '1.5px solid var(--line)', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: passageMode === key ? 'var(--accent)' : 'var(--card)', color: passageMode === key ? '#fff' : 'var(--muted)' }}>
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* AI 발췌문 생성 */}
-          <button className="btn-sm btn-outline" onClick={generateAIPassage} disabled={aiPassageLoading}
-            style={{ marginBottom: 8, width: '100%', padding: '10px 0' }}>
-            {aiPassageLoading ? '🤖 AI가 발췌문을 생성하고 있어요…' : '🤖 AI 발췌문 + 질문 자동 생성'}
-          </button>
+          {/* 주간/월간 선택 (공통) */}
+          <select value={newPassage.period} onChange={e => setNewPassage({...newPassage, period: e.target.value})} style={{ marginBottom: 12 }}>
+            <option value="weekly">📅 주간</option>
+            <option value="monthly">📆 월간</option>
+          </select>
 
-          {/* 발췌문 */}
-          <textarea placeholder="발췌문 *" value={newPassage.passage}
-            onChange={e => setNewPassage({...newPassage, passage: e.target.value})}
-            style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
+          {/* AI 모드 */}
+          {passageMode === 'ai' && (
+            <>
+              <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading}
+                style={{ marginBottom: 12, width: '100%' }}>
+                {aiPassageLoading ? '🤖 AI가 책을 고르고 발췌문을 생성하고 있어요…' : '🤖 AI가 책 선택 + 발췌문 + 질문 자동 생성'}
+              </button>
 
-          <input placeholder="출처 표기 (선택)" value={newPassage.source} onChange={e => setNewPassage({...newPassage, source: e.target.value})} style={{ marginBottom: 12 }} />
+              {newPassage.passage && (
+                <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>AI가 생성한 결과 — 내용을 확인 후 등록하세요</p>
+                  <p style={{ fontSize: 13, fontWeight: 500 }}>{newPassage.bookTitle} {newPassage.bookAuthor && `/ ${newPassage.bookAuthor}`}</p>
+                  <p style={{ fontSize: 13, lineHeight: 1.7, marginTop: 6, whiteSpace: 'pre-line' }}>{newPassage.passage}</p>
+                  {newPassage.questions.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      {newPassage.questions.map((q, i) => <p key={i} style={{ fontSize: 12, color: 'var(--muted)' }}>{i+1}. {q}</p>)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 직접 입력 모드 */}
+          {passageMode === 'manual' && (
+            <>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input placeholder="책 제목 *" value={newPassage.bookTitle} onChange={e => setNewPassage({...newPassage, bookTitle: e.target.value})} style={{ flex: 2 }} />
+                <input placeholder="저자" value={newPassage.bookAuthor} onChange={e => setNewPassage({...newPassage, bookAuthor: e.target.value})} style={{ flex: 1 }} />
+              </div>
+              <select value={newPassage.bookId} onChange={e => setNewPassage({...newPassage, bookId: e.target.value})} style={{ marginBottom: 8 }}>
+                <option value="">시스템 내 책 연결 (선택사항)</option>
+                {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+              </select>
+              <textarea placeholder="발췌문 *" value={newPassage.passage}
+                onChange={e => setNewPassage({...newPassage, passage: e.target.value})}
+                style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
+              <input placeholder="출처 표기 (선택)" value={newPassage.source} onChange={e => setNewPassage({...newPassage, source: e.target.value})} style={{ marginBottom: 12 }} />
+            </>
+          )}
 
           {/* 관련 질문 */}
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>관련 질문 (최대 5개)</p>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input placeholder="질문 추가" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim() && newPassage.questions.length < 5) {
-                setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
-                setNewPassageQuestion('');
-              }}} style={{ flex: 1 }} />
-            <button className="btn-sm btn-outline" onClick={() => {
-              if (newPassageQuestion.trim() && newPassage.questions.length < 5) {
-                setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
-                setNewPassageQuestion('');
-              }
-            }}>추가</button>
-          </div>
-          {newPassage.questions.map((q, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
-              <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+          {(passageMode === 'manual' || newPassage.questions.length > 0) && (
+            <>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
+                관련 질문 (최대 5개){passageMode === 'ai' && newPassage.questions.length > 0 ? ' — AI 생성 결과 (삭제 가능)' : ''}
+              </p>
+              {newPassage.questions.map((q, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+                  <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+                </div>
+              ))}
+              {passageMode === 'manual' && newPassage.questions.length < 5 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <input placeholder="질문 추가" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim()) {
+                      setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                      setNewPassageQuestion('');
+                    }}} style={{ flex: 1 }} />
+                  <button className="btn-sm btn-outline" onClick={() => {
+                    if (newPassageQuestion.trim()) {
+                      setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                      setNewPassageQuestion('');
+                    }
+                  }}>추가</button>
+                </div>
+              )}
+            </>
+          )}
+          {passageMode === 'manual' && newPassage.questions.length === 0 && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input placeholder="관련 질문 추가 (선택, 최대 5개)" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim()) {
+                  setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                  setNewPassageQuestion('');
+                }}} style={{ flex: 1 }} />
+              <button className="btn-sm btn-outline" onClick={() => {
+                if (newPassageQuestion.trim()) {
+                  setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
+                  setNewPassageQuestion('');
+                }
+              }}>추가</button>
             </div>
-          ))}
+          )}
 
           <button className="btn-primary" onClick={addPassage} style={{ marginTop: 12 }}>등록</button>
 
