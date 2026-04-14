@@ -23,9 +23,7 @@ export function useFCM() {
 
   async function saveToken() {
     try {
-      await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      await navigator.serviceWorker.ready;
-      const sw = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+      const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       const messaging = getMessaging(app);
       const token = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
