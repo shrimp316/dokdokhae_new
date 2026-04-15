@@ -121,7 +121,8 @@ export default function BoardPostPage({ params }) {
 
   if (!post) return <div className="empty-msg">로딩 중…</div>;
 
-  const canEdit = user?.uid === post.uid;
+  const isAdmin = profile?.role === 'admin';
+  const canEdit = user?.uid === post.uid || isAdmin;
   const topComments = comments.filter(c => !c.parentId);
   const getReplies = (commentId) => comments.filter(c => c.parentId === commentId);
 
@@ -202,7 +203,7 @@ export default function BoardPostPage({ params }) {
                   <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(c.createdAt)}</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                     {user && <button onClick={() => setReplyTo(replyTo === c.id ? null : c.id)} style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>답글</button>}
-                    {user?.uid === c.uid && (
+                    {(user?.uid === c.uid || isAdmin) && (
                       <>
                         <button onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.content); }} style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>수정</button>
                         <button onClick={() => deleteComment(c.id)} style={{ fontSize: 11, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>삭제</button>
@@ -237,7 +238,7 @@ export default function BoardPostPage({ params }) {
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>↩</span>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{r.nickname}</span>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(r.createdAt)}</span>
-                    {user?.uid === r.uid && (
+                    {(user?.uid === r.uid || isAdmin) && (
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                         <button onClick={() => { setEditingCommentId(r.id); setEditCommentText(r.content); }} style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>수정</button>
                         <button onClick={() => deleteComment(r.id)} style={{ fontSize: 11, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>삭제</button>

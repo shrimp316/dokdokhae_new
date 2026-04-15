@@ -17,13 +17,18 @@ export default function ReviewsPage() {
   const [editContent, setEditContent] = useState('');
   const [editRating, setEditRating] = useState(0);
 
+  const isAdmin = profile?.role === 'admin';
+
   useEffect(() => {
     if (!user) return;
-    loadMyReviews();
-  }, [user]);
+    loadReviews();
+  }, [user, isAdmin]);
 
-  async function loadMyReviews() {
-    const snap = await getDocs(query(collection(db, 'reviews'), where('uid', '==', user.uid), orderBy('createdAt', 'desc')));
+  async function loadReviews() {
+    const q = isAdmin
+      ? query(collection(db, 'reviews'), orderBy('createdAt', 'desc'))
+      : query(collection(db, 'reviews'), where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
     const revs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     setReviews(revs);
 
@@ -40,14 +45,14 @@ export default function ReviewsPage() {
   async function handleDelete(reviewId) {
     if (!confirm('삭제할까요?')) return;
     await deleteDoc(doc(db, 'reviews', reviewId));
-    loadMyReviews();
+    loadReviews();
   }
 
   async function handleEdit(reviewId) {
     if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
     await updateDoc(doc(db, 'reviews', reviewId), { content: editContent, rating: editRating, updatedAt: serverTimestamp() });
     setEditingId(null);
-    loadMyReviews();
+    loadReviews();
   }
 
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
@@ -64,10 +69,12 @@ export default function ReviewsPage() {
 
   return (
     <div>
-      <div className="section-title">내 감상평</div>
-      <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
-        도서별 감상평을 남기려면 <button onClick={() => router.push('/books')} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>도서 목록</button>에서 책을 선택해주세요.
-      </p>
+      <div className="section-title">{isAdmin ? '전체 감상평' : '내 감상평'}</div>
+      {!isAdmin && (
+        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
+          도서별 감상평을 남기려면 <button onClick={() => router.push('/books')} style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>도서 목록</button>에서 책을 선택해주세요.
+        </p>
+      )}
 
       {reviews.length === 0 ? (
         <p className="empty-msg">아직 작성한 감상평이 없어요.</p>
@@ -88,6 +95,7 @@ export default function ReviewsPage() {
               )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                {isAdmin && r.nickname && <span style={{ fontSize: 12, fontWeight: 500 }}>{r.nickname}</span>}
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(r.createdAt)}</span>
                 {r.updatedAt && <span style={{ fontSize: 11, color: 'var(--muted)' }}>(수정됨)</span>}
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
