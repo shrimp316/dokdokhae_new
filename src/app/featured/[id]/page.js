@@ -5,6 +5,9 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
 export default function FeaturedDetailPage({ params }) {
   const { id } = use(params);
@@ -31,13 +34,18 @@ export default function FeaturedDetailPage({ params }) {
     setComments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   }
 
+  const isEmptyHtml = (html) => !html || html.replace(/<(.|\n)*?>/g, '').trim() === '';
+
   async function addComment(parentId = null) {
     if (!user) { router.push('/login'); return; }
     const text = parentId ? replyText : commentText;
-    if (!text.trim()) return;
+    if (parentId ? !text.trim() : isEmptyHtml(text)) return;
     await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
-      content: text.trim(), nickname: profile.nickname, uid: user.uid,
-      parentId: parentId || null, createdAt: serverTimestamp(),
+      content: parentId ? text.trim() : text,
+      nickname: profile.nickname, uid: user.uid,
+      parentId: parentId || null,
+      isRich: !parentId,
+      createdAt: serverTimestamp(),
     });
     if (parentId) { setReplyText(''); setReplyTo(null); }
     else setCommentText('');
@@ -51,8 +59,13 @@ export default function FeaturedDetailPage({ params }) {
   }
 
   async function editComment(commentId) {
-    if (!editCommentText.trim()) return;
-    await updateDoc(doc(db, 'featuredPassages', id, 'comments', commentId), { content: editCommentText, updatedAt: serverTimestamp() });
+    const target = comments.find(c => c.id === commentId);
+    const isRich = target?.isRich || !target?.parentId;
+    if (isRich ? isEmptyHtml(editCommentText) : !editCommentText.trim()) return;
+    await updateDoc(doc(db, 'featuredPassages', id, 'comments', commentId), {
+      content: editCommentText,
+      updatedAt: serverTimestamp(),
+    });
     setEditingCommentId(null);
     loadComments();
   }
@@ -110,13 +123,17 @@ export default function FeaturedDetailPage({ params }) {
 
         {/* 댓글 작성 */}
         {user ? (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <input type="text" placeholder="생각을 남겨주세요…" value={commentText}
-              onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addComment()}
-              style={{ flex: 1 }} />
-            <button onClick={() => addComment()} className="btn-sm"
-              style={{ background: 'var(--accent)', color: '#fff', flexShrink: 0 }}>등록</button>
+          <div style={{ marginBottom: 16 }}>
+            <QuillEditor
+              value={commentText}
+              onChange={setCommentText}
+              placeholder="생각을 남겨주세요…"
+              minHeight={120}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <button onClick={() => addComment()} className="btn-sm"
+                style={{ background: 'var(--accent)', color: '#fff' }}>등록</button>
+            </div>
           </div>
         ) : (
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
@@ -153,14 +170,24 @@ export default function FeaturedDetailPage({ params }) {
                 </div>
 
                 {editingCommentId === c.id ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={editCommentText} onChange={e => setEditCommentText(e.target.value)}
-                      style={{ flex: 1, fontSize: 13 }} onKeyDown={e => e.key === 'Enter' && editComment(c.id)} />
-                    <button onClick={() => editComment(c.id)} className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }}>완료</button>
-                    <button onClick={() => setEditingCommentId(null)} className="btn-sm btn-outline">취소</button>
+                  <div>
+                    <QuillEditor
+                      value={editCommentText}
+                      onChange={setEditCommentText}
+                      placeholder="내용을 수정해주세요…"
+                      minHeight={100}
+                    />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                      <button onClick={() => editComment(c.id)} className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }}>완료</button>
+                      <button onClick={() => setEditingCommentId(null)} className="btn-sm btn-outline">취소</button>
+                    </div>
                   </div>
                 ) : (
-                  <p style={{ fontSize: 14, lineHeight: 1.6 }}>{c.content}</p>
+                  <div
+                    className="ql-editor ql-snow"
+                    style={{ fontSize: 14, lineHeight: 1.7, padding: 0, border: 'none' }}
+                    dangerouslySetInnerHTML={{ __html: c.content }}
+                  />
                 )}
 
                 {/* 답글 입력 */}
