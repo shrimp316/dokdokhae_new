@@ -20,9 +20,10 @@ export default function BoardPage() {
   const [title, setTitle] = useState('');
   const [prefix, setPrefix] = useState('');
   const [content, setContent] = useState('');
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [prefixes, setPrefixes] = useState([]);
+  const [filterPrefix, setFilterPrefix] = useState('');
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -44,10 +45,13 @@ export default function BoardPage() {
     } catch {}
   }
 
-  const filtered = posts.filter(p =>
-    !search || (p.title || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.nickname || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = posts.filter(p => {
+    const matchSearch = !search ||
+      (p.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.nickname || '').toLowerCase().includes(search.toLowerCase());
+    const matchPrefix = !filterPrefix || p.prefix === filterPrefix;
+    return matchSearch && matchPrefix;
+  });
 
   async function handleSubmit() {
     if (!user) { router.push('/login'); return; }
@@ -56,9 +60,9 @@ export default function BoardPage() {
     setSubmitting(true);
     try {
       let finalContent = content;
-      if (imageFile) {
-        const r = ref(storage, `board/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(r, imageFile);
+      for (const file of imageFiles) {
+        const r = ref(storage, `board/${Date.now()}_${file.name}`);
+        await uploadBytes(r, file);
         const url = await getDownloadURL(r);
         finalContent += `<p><img src="${url}" style="max-width:100%;border-radius:8px" /></p>`;
       }
@@ -67,7 +71,7 @@ export default function BoardPage() {
         nickname: profile.nickname, uid: user.uid,
         createdAt: serverTimestamp(),
       });
-      setTitle(''); setPrefix(''); setContent(''); setImageFile(null);
+      setTitle(''); setPrefix(''); setContent(''); setImageFiles([]);
       setShowForm(false);
       localStorage.removeItem('draft-board');
       loadPosts();
@@ -89,11 +93,24 @@ export default function BoardPage() {
       <NoticeBanner />
       <div className="section-title">자유게시판</div>
 
-      {/* 검색 */}
+      {/* 검색 + 말머리 필터 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 24, padding: '8px 14px', marginBottom: 14 }}>
         <span style={{ color: 'var(--muted)' }}>🔍</span>
         <input type="text" placeholder="제목, 닉네임으로 검색…" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ border: 'none', background: 'none', outline: 'none', fontSize: 14, width: '100%' }} />
+          style={{ border: 'none', background: 'none', outline: 'none', fontSize: 14, flex: 1, minWidth: 0 }} />
+        {prefixes.length > 0 && (
+          <>
+            <div style={{ width: 1, height: 18, background: 'var(--line)' }} />
+            <select
+              value={filterPrefix}
+              onChange={e => setFilterPrefix(e.target.value)}
+              style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <option value="">전체 말머리</option>
+              {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+            </select>
+          </>
+        )}
       </div>
 
       {/* 글쓰기 버튼 */}
@@ -127,8 +144,24 @@ export default function BoardPage() {
           <div style={{ marginBottom: 8 }}>
             <QuillEditor value={content} onChange={setContent} placeholder="내용을 입력해주세요…" minHeight={160} />
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-            <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} style={{ flex: 1, fontSize: 12 }} />
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--muted)', border: '1.5px dashed var(--line)', borderRadius: 8, padding: '7px 14px' }}>
+              📎 사진 첨부 (여러 장 가능)
+              <input type="file" accept="image/*" multiple onChange={e => setImageFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
+            </label>
+            {imageFiles.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                {imageFiles.map((f, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <img src={URL.createObjectURL(f)} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1.5px solid var(--line)' }} />
+                    <button
+                      onClick={() => setImageFiles(imageFiles.filter((_, j) => j !== i))}
+                      style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#e55', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={saveDraft} className="btn-sm btn-outline" style={{ flex: 1 }}>임시저장</button>
