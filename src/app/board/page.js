@@ -16,6 +16,7 @@ export default function BoardPage() {
   const router = useRouter();
   const [posts, setPosts] = useState([]);
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [prefix, setPrefix] = useState('');
@@ -94,23 +95,38 @@ export default function BoardPage() {
       <div className="section-title">자유게시판</div>
 
       {/* 검색 + 말머리 필터 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 24, padding: '8px 14px', marginBottom: 14 }}>
-        {prefixes.length > 0 && (
-          <>
-            <select
-              value={filterPrefix}
-              onChange={e => setFilterPrefix(e.target.value)}
-              style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0 }}
-            >
-              <option value="">전체 말머리</option>
-              {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
-            </select>
-            <div style={{ width: 1, height: 18, background: 'var(--line)' }} />
-          </>
-        )}
-        <span style={{ color: 'var(--muted)' }}>🔍</span>
-        <input type="text" placeholder="제목, 닉네임으로 검색…" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ border: 'none', background: 'none', outline: 'none', fontSize: 14, flex: 1, minWidth: 0 }} />
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 12, padding: '8px 14px', marginBottom: 8 }}>
+          {prefixes.length > 0 && (
+            <>
+              <select
+                value={filterPrefix}
+                onChange={e => setFilterPrefix(e.target.value)}
+                style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0, width: 'auto', padding: 0 }}
+              >
+                <option value="">전체 말머리</option>
+                {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+              </select>
+              <div style={{ width: 1, height: 18, background: 'var(--line)', flexShrink: 0 }} />
+            </>
+          )}
+          <span style={{ color: 'var(--muted)', flexShrink: 0 }}>🔍</span>
+          <input
+            type="text"
+            placeholder="제목, 닉네임으로 검색…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') setSearch(searchInput); }}
+            style={{ border: 'none', background: 'none', outline: 'none', fontSize: 14, flex: 1, minWidth: 0, width: 'auto', padding: 0 }}
+          />
+        </div>
+        <button
+          onClick={() => setSearch(searchInput)}
+          className="btn-primary"
+          style={{ padding: '10px 0' }}
+        >
+          검색
+        </button>
       </div>
 
       {/* 글쓰기 버튼 */}
