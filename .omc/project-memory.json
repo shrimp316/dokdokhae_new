@@ -1,0 +1,171 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776614390535,
+  "projectRoot": "C:\\Users\\shrim\\git\\dokdokhae_new",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      },
+      {
+        "name": "JavaScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "jsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "16.2.3",
+        "category": "fullstack"
+      },
+      {
+        "name": "react",
+        "version": "19.2.4",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.4",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start",
+      "lint": "eslint"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "public",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 9,
+      "lastAccessed": 1776614390480,
+      "keyFiles": [
+        "file.svg",
+        "firebase-messaging-sw.js",
+        "globe.svg",
+        "icon-192.png",
+        "icon-512.png"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1776614390480,
+      "keyFiles": []
+    },
+    "src\\app": {
+      "path": "src\\app",
+      "purpose": "Application code",
+      "fileCount": 3,
+      "lastAccessed": 1776614390493,
+      "keyFiles": [
+        "globals.css",
+        "layout.js",
+        "page.js"
+      ]
+    },
+    "src\\components": {
+      "path": "src\\components",
+      "purpose": "UI components",
+      "fileCount": 6,
+      "lastAccessed": 1776614390493,
+      "keyFiles": [
+        "AuthModal.js",
+        "FCMInit.js",
+        "Header.js"
+      ]
+    },
+    "src\\lib": {
+      "path": "src\\lib",
+      "purpose": "Library code",
+      "fileCount": 3,
+      "lastAccessed": 1776614390494,
+      "keyFiles": [
+        "AuthContext.js",
+        "AuthModalContext.js",
+        "firebase.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src\\app\\board\\page.js",
+      "accessCount": 2,
+      "lastAccessed": 1776614753505,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\books\\[id]\\page.js",
+      "accessCount": 2,
+      "lastAccessed": 1776614763261,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\reviews\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1776614694201,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\featured\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1776614698771,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\AuthContext.js",
+      "accessCount": 1,
+      "lastAccessed": 1776614719247,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

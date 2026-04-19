@@ -55,6 +55,7 @@ export default function BookReviewsPage({ params }) {
 
   async function handleSubmit() {
     if (!user) { router.push('/login'); return; }
+    if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
     try {
@@ -72,7 +73,7 @@ export default function BookReviewsPage({ params }) {
       localStorage.removeItem(`draft-review-${id}`);
       loadReviews();
     } catch (e) { alert('저장 실패: ' + e.message); }
-    setSubmitting(false);
+    finally { setSubmitting(false); }
   }
 
   async function handleDelete(reviewId) {

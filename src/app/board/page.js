@@ -56,6 +56,7 @@ export default function BoardPage() {
 
   async function handleSubmit() {
     if (!user) { router.push('/login'); return; }
+    if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
@@ -77,7 +78,7 @@ export default function BoardPage() {
       localStorage.removeItem('draft-board');
       loadPosts();
     } catch (e) { alert('저장 실패: ' + e.message); }
-    setSubmitting(false);
+    finally { setSubmitting(false); }
   }
 
   function saveDraft() {
