@@ -130,17 +130,6 @@ export default function BoardPostPage({ params }) {
     loadComments();
   }
 
-  useEffect(() => {
-    const container = document.querySelector('.post-content');
-    if (!container) return;
-    const imgs = container.querySelectorAll('img');
-    const handler = (e) => setLightboxImg(e.currentTarget.src);
-    imgs.forEach(img => {
-      img.style.cursor = 'zoom-in';
-      img.addEventListener('click', handler);
-    });
-    return () => imgs.forEach(img => img.removeEventListener('click', handler));
-  }, [post]);
 
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
 
@@ -191,7 +180,12 @@ export default function BoardPostPage({ params }) {
               {post.nickname} · {formatDate(post.createdAt)}
               {post.updatedAt && <span> (수정됨)</span>}
             </div>
-            <div className="post-content" style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div
+              className="post-content"
+              style={{ fontSize: 14, lineHeight: 1.8 }}
+              dangerouslySetInnerHTML={{ __html: post.content }}
+              onClick={e => { if (e.target.tagName === 'IMG') setLightboxImg(e.target.src); }}
+            />
 
             {/* 좋아요 + 액션 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--line)' }}>

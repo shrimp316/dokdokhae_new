@@ -160,6 +160,8 @@ textarea { resize: vertical; min-height: 80px; }
 .ql-editor { min-height: 120px; line-height: 1.7; }
 .ql-editor.ql-blank::before { color: var(--muted) !important; font-style: normal !important; }
 
+.post-content img { cursor: zoom-in; }
+
 /* ── 모달 ── */
 .modal-overlay {
   position: fixed; inset: 0;
