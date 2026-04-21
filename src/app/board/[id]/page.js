@@ -2,7 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, collection, getDocs, query, orderBy, addDoc, deleteDoc, updateDoc, serverTimestamp, where, increment, setDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,8 +26,10 @@ export default function BoardPostPage({ params }) {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editImageFile, setEditImageFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   useEffect(() => {
     loadPost();
@@ -81,8 +83,19 @@ export default function BoardPostPage({ params }) {
     if (!editTitle.trim() || !editContent) { alert('제목과 내용을 입력해주세요.'); return; }
     let finalContent = editContent;
     if (editImageFile) {
+      if (!editImageFile.type.startsWith('image/')) { alert('이미지 파일만 업로드 가능합니다.'); return; }
+      if (editImageFile.size > 5 * 1024 * 1024) { alert('파일 크기는 5MB 이하여야 합니다.'); return; }
       const r = ref(storage, `board/${Date.now()}_${editImageFile.name}`);
-      await uploadBytes(r, editImageFile);
+      setUploadProgress(0);
+      await new Promise((resolve, reject) => {
+        const task = uploadBytesResumable(r, editImageFile);
+        task.on('state_changed',
+          (snap) => setUploadProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+          reject,
+          resolve
+        );
+      });
+      setUploadProgress(null);
       const url = await getDownloadURL(r);
       finalContent += `<p><img src="${url}" style="max-width:100%;border-radius:8px" /></p>`;
     }
@@ -117,6 +130,18 @@ export default function BoardPostPage({ params }) {
     loadComments();
   }
 
+  useEffect(() => {
+    const container = document.querySelector('.post-content');
+    if (!container) return;
+    const imgs = container.querySelectorAll('img');
+    const handler = (e) => setLightboxImg(e.currentTarget.src);
+    imgs.forEach(img => {
+      img.style.cursor = 'zoom-in';
+      img.addEventListener('click', handler);
+    });
+    return () => imgs.forEach(img => img.removeEventListener('click', handler));
+  }, [post]);
+
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
 
   if (!post) return <div className="empty-msg">로딩 중…</div>;
@@ -141,6 +166,16 @@ export default function BoardPostPage({ params }) {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, marginBottom: 8 }}>
               <input type="file" accept="image/*" onChange={e => setEditImageFile(e.target.files[0])} style={{ flex: 1, fontSize: 12 }} />
             </div>
+            {uploadProgress !== null && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
+                  <span>이미지 업로드 중…</span><span>{uploadProgress}%</span>
+                </div>
+                <div style={{ height: 6, background: 'var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${uploadProgress}%`, background: 'var(--accent)', borderRadius: 4, transition: 'width 0.2s ease' }} />
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button className="btn-sm btn-outline" onClick={() => setEditing(false)}>취소</button>
               <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }} onClick={handleEdit}>수정 완료</button>
@@ -156,7 +191,7 @@ export default function BoardPostPage({ params }) {
               {post.nickname} · {formatDate(post.createdAt)}
               {post.updatedAt && <span> (수정됨)</span>}
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div className="post-content" style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: post.content }} />
 
             {/* 좋아요 + 액션 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
@@ -260,6 +295,20 @@ export default function BoardPostPage({ params }) {
           ))
         )}
       </div>
+      {lightboxImg && (
+        <div
+          className="modal-overlay"
+          onClick={() => setLightboxImg(null)}
+          style={{ background: 'rgba(0,0,0,0.85)', cursor: 'zoom-out' }}
+        >
+          <img
+            src={lightboxImg}
+            alt=""
+            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,0.5)', objectFit: 'contain' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
