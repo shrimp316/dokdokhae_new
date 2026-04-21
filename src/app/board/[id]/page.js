@@ -131,6 +131,16 @@ export default function BoardPostPage({ params }) {
   }
 
 
+  async function handleShare() {
+    const url = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: post.title, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert('링크가 복사됐어요!');
+    }
+  }
+
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
 
   if (!post) return <div className="empty-msg">로딩 중…</div>;
@@ -191,6 +201,9 @@ export default function BoardPostPage({ params }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
               <button onClick={toggleLike} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1.5px solid ${liked ? 'var(--accent2)' : 'var(--line)'}`, borderRadius: 20, background: liked ? '#fff8f0' : 'none', color: liked ? 'var(--accent2)' : 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
                 {liked ? '❤️' : '🤍'} {likeCount}
+              </button>
+              <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: '1.5px solid var(--line)', borderRadius: 20, background: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
+                공유
               </button>
               {canEdit && (
                 <>
