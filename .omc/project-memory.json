@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1776614390535,
+  "lastScanned": 1777181736553,
   "projectRoot": "C:\\Users\\shrim\\git\\dokdokhae_new",
   "techStack": {
     "languages": [
@@ -85,7 +85,7 @@
       "path": "public",
       "purpose": "Public files",
       "fileCount": 9,
-      "lastAccessed": 1776614390480,
+      "lastAccessed": 1777181736500,
       "keyFiles": [
         "file.svg",
         "firebase-messaging-sw.js",
@@ -98,14 +98,14 @@
       "path": "src",
       "purpose": "Source code",
       "fileCount": 0,
-      "lastAccessed": 1776614390480,
+      "lastAccessed": 1777181736500,
       "keyFiles": []
     },
     "src\\app": {
       "path": "src\\app",
       "purpose": "Application code",
       "fileCount": 3,
-      "lastAccessed": 1776614390493,
+      "lastAccessed": 1777181736515,
       "keyFiles": [
         "globals.css",
         "layout.js",
@@ -116,7 +116,7 @@
       "path": "src\\components",
       "purpose": "UI components",
       "fileCount": 6,
-      "lastAccessed": 1776614390493,
+      "lastAccessed": 1777181736515,
       "keyFiles": [
         "AuthModal.js",
         "FCMInit.js",
@@ -127,7 +127,7 @@
       "path": "src\\lib",
       "purpose": "Library code",
       "fileCount": 3,
-      "lastAccessed": 1776614390494,
+      "lastAccessed": 1777181736516,
       "keyFiles": [
         "AuthContext.js",
         "AuthModalContext.js",
@@ -138,14 +138,32 @@
   "hotPaths": [
     {
       "path": "src\\app\\board\\page.js",
-      "accessCount": 2,
-      "lastAccessed": 1776614753505,
+      "accessCount": 9,
+      "lastAccessed": 1777183156756,
       "type": "file"
     },
     {
       "path": "src\\app\\books\\[id]\\page.js",
+      "accessCount": 9,
+      "lastAccessed": 1777183171695,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\AuthContext.js",
+      "accessCount": 3,
+      "lastAccessed": 1777182843596,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\firebase.js",
       "accessCount": 2,
-      "lastAccessed": 1776614763261,
+      "lastAccessed": 1777182844479,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\layout.js",
+      "accessCount": 2,
+      "lastAccessed": 1777182860702,
       "type": "file"
     },
     {
@@ -161,9 +179,63 @@
       "type": "file"
     },
     {
-      "path": "src\\lib\\AuthContext.js",
+      "path": "src/app/books/[id]/page.js",
       "accessCount": 1,
-      "lastAccessed": 1776614719247,
+      "lastAccessed": 1777181867086,
+      "type": "directory"
+    },
+    {
+      "path": "src/app/board/page.js",
+      "accessCount": 1,
+      "lastAccessed": 1777181867733,
+      "type": "directory"
+    },
+    {
+      "path": "src\\app\\board\\[id]\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182838880,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\login\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182842198,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\admin\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182846941,
+      "type": "file"
+    },
+    {
+      "path": "src\\app\\featured\\[id]\\page.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182847283,
+      "type": "file"
+    },
+    {
+      "path": ".env.local",
+      "accessCount": 1,
+      "lastAccessed": 1777182850232,
+      "type": "file"
+    },
+    {
+      "path": "src\\lib\\AuthModalContext.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182860474,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\AuthModal.js",
+      "accessCount": 1,
+      "lastAccessed": 1777182860547,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1777183313441,
       "type": "file"
     }
   ],
