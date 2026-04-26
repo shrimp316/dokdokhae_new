@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc, collection, getDocs, query, where, orderBy, addDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy, addDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -32,10 +32,14 @@ export default function BookReviewsPage({ params }) {
     });
     loadReviews();
     loadQuestions();
-    // 임시저장 불러오기
-    const saved = localStorage.getItem(`draft-review-${id}`);
-    if (saved) setDraft(saved);
   }, [id]);
+
+  useEffect(() => {
+    if (!user) { setDraft(''); return; }
+    getDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`))
+      .then(snap => { if (snap.exists()) setDraft(snap.data().content || ''); })
+      .catch(() => {});
+  }, [id, user]);
 
   async function loadQuestions() {
     const snap = await getDocs(query(collection(db, 'bookQuestions'), where('bookId', '==', id), orderBy('order', 'asc')));
@@ -70,7 +74,8 @@ export default function BookReviewsPage({ params }) {
         createdAt: serverTimestamp(),
       });
       setContent(''); setRating(0); setImageFile(null);
-      localStorage.removeItem(`draft-review-${id}`);
+      try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`)); } catch {}
+      setDraft('');
       loadReviews();
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { setSubmitting(false); }
@@ -89,9 +94,15 @@ export default function BookReviewsPage({ params }) {
     loadReviews();
   }
 
-  function saveDraft() {
-    localStorage.setItem(`draft-review-${id}`, content);
-    alert('임시저장 완료!');
+  async function saveDraft() {
+    if (!user) { alert('로그인 후 이용해주세요.'); return; }
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`), {
+        bookId: id, content, updatedAt: serverTimestamp(),
+      });
+      setDraft(content);
+      alert('임시저장 완료!');
+    } catch (e) { alert('임시저장 실패: ' + e.message); }
   }
 
   if (!book) return <div className="empty-msg">로딩 중…</div>;

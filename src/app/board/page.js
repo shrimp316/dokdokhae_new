@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -30,9 +30,14 @@ export default function BoardPage() {
   useEffect(() => {
     loadPosts();
     loadPrefixes();
-    const saved = localStorage.getItem('draft-board');
-    if (saved) { try { const d = JSON.parse(saved); setDraft(d); } catch {} }
   }, []);
+
+  useEffect(() => {
+    if (!user) { setDraft(''); return; }
+    getDoc(doc(db, 'users', user.uid, 'drafts', 'board'))
+      .then(snap => { if (snap.exists()) setDraft(snap.data()); })
+      .catch(() => {});
+  }, [user]);
 
   async function loadPosts() {
     const snap = await getDocs(query(collection(db, 'board'), orderBy('createdAt', 'desc')));
@@ -75,15 +80,22 @@ export default function BoardPage() {
       });
       setTitle(''); setPrefix(''); setContent(''); setImageFiles([]);
       setShowForm(false);
-      localStorage.removeItem('draft-board');
+      try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
+      setDraft('');
       loadPosts();
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { setSubmitting(false); }
   }
 
-  function saveDraft() {
-    localStorage.setItem('draft-board', JSON.stringify({ title, prefix, content }));
-    alert('임시저장 완료!');
+  async function saveDraft() {
+    if (!user) { alert('로그인 후 이용해주세요.'); return; }
+    try {
+      await setDoc(doc(db, 'users', user.uid, 'drafts', 'board'), {
+        title, prefix, content, updatedAt: serverTimestamp(),
+      });
+      setDraft({ title, prefix, content });
+      alert('임시저장 완료!');
+    } catch (e) { alert('임시저장 실패: ' + e.message); }
   }
 
   function loadDraft() {
