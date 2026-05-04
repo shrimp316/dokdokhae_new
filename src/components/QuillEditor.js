@@ -82,25 +82,35 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     if (!quill) return;
     const root = quill.root;
 
+    function clearSelected() {
+      root.querySelectorAll('img.is-selected').forEach(el => el.classList.remove('is-selected'));
+    }
+
     function onClick(ev) {
       const target = ev.target;
       if (target && target.tagName === 'IMG') {
         ev.preventDefault();
+        clearSelected();
+        target.classList.add('is-selected');
         const rect = target.getBoundingClientRect();
         const containerRect = containerRef.current?.getBoundingClientRect();
         if (!containerRect) return;
-        setMenu({
-          x: rect.right - containerRect.left,
-          y: rect.top - containerRect.top,
-          img: target,
-        });
+        const MENU_W = 220;
+        const MENU_H = 36;
+        let x = rect.left - containerRect.left;
+        x = Math.max(4, Math.min(x, containerRect.width - MENU_W - 4));
+        let y = rect.top - containerRect.top - MENU_H - 6;
+        if (y < 4) y = rect.bottom - containerRect.top + 6;
+        setMenu({ x, y, img: target });
       } else {
+        clearSelected();
         setMenu(null);
       }
     }
     root.addEventListener('click', onClick);
     return () => {
       root.removeEventListener('click', onClick);
+      clearSelected();
     };
   }, [ReactQuill, getQuill]);
 
@@ -141,6 +151,18 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
         modules={modules}
         style={{ minHeight }}
       />
+      {onImageUpload && (
+        <div style={{
+          fontSize: 11, color: 'var(--muted)', padding: '6px 10px',
+          borderLeft: '1.5px solid var(--line)',
+          borderRight: '1.5px solid var(--line)',
+          borderBottom: '1.5px solid var(--line)',
+          borderRadius: '0 0 8px 8px',
+          background: 'var(--tag-bg)',
+        }}>
+          💡 이미지를 본문에 클릭하면 크기(작게/중간/크게)와 삭제 메뉴가 표시됩니다.
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -150,8 +172,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       />
       {menu && (
         <div style={{
-          position: 'absolute', left: menu.x + 4, top: menu.y, zIndex: 50,
-          background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 8,
+          position: 'absolute', left: menu.x, top: menu.y, zIndex: 50,
+          background: 'var(--card)', border: '1.5px solid var(--accent)', borderRadius: 8,
           padding: 4, display: 'flex', gap: 4, boxShadow: 'var(--shadow)',
         }}>
           <button type="button" className="btn-sm btn-outline" onClick={() => setSize('img-sm')}>작게</button>

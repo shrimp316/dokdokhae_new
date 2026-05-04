@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy, limit, startAfter, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -13,7 +13,16 @@ import dynamic from 'next/dynamic';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
-const PAGE = 20;
+const PAGE_SIZE = 10;
+const VISIBLE_PAGES = 5;
+
+function getVisiblePages(current, total) {
+  if (total <= VISIBLE_PAGES) return Array.from({ length: total }, (_, i) => i + 1);
+  let start = Math.max(1, current - Math.floor(VISIBLE_PAGES / 2));
+  const end = Math.min(total, start + VISIBLE_PAGES - 1);
+  start = Math.max(1, end - VISIBLE_PAGES + 1);
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
 export default function BoardPage() {
   const { user, profile } = useAuth();
@@ -29,9 +38,7 @@ export default function BoardPage() {
   const [prefixes, setPrefixes] = useState([]);
   const [filterPrefix, setFilterPrefix] = useState('');
   const [draft, setDraft] = useState('');
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     loadPrefixes();
@@ -40,32 +47,20 @@ export default function BoardPage() {
   useEffect(() => {
     let cancelled = false;
     async function run() {
-      let snap;
-      if (search.trim()) {
-        snap = await getDocs(query(
-          collection(db, 'board'),
-          orderBy('createdAt', 'desc'),
-        ));
-        if (cancelled) return;
-        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setLastDoc(null);
-        setHasMore(false);
-      } else {
-        snap = await getDocs(query(
-          collection(db, 'board'),
-          orderBy('createdAt', 'desc'),
-          limit(PAGE),
-        ));
-        if (cancelled) return;
-        const docs = snap.docs;
-        setPosts(docs.map(d => ({ id: d.id, ...d.data() })));
-        setLastDoc(docs.length ? docs[docs.length - 1] : null);
-        setHasMore(docs.length === PAGE);
-      }
+      const snap = await getDocs(query(
+        collection(db, 'board'),
+        orderBy('createdAt', 'desc'),
+      ));
+      if (cancelled) return;
+      setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }
     run();
     return () => { cancelled = true; };
-  }, [search]);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterPrefix]);
 
   useEffect(() => {
     if (!user) { setDraft(''); return; }
@@ -74,32 +69,12 @@ export default function BoardPage() {
       .catch(() => {});
   }, [user]);
 
-  async function loadFirstPage() {
+  async function reloadPosts() {
     const snap = await getDocs(query(
       collection(db, 'board'),
       orderBy('createdAt', 'desc'),
-      limit(PAGE),
     ));
-    const docs = snap.docs;
-    setPosts(docs.map(d => ({ id: d.id, ...d.data() })));
-    setLastDoc(docs.length ? docs[docs.length - 1] : null);
-    setHasMore(docs.length === PAGE);
-  }
-
-  async function loadMore() {
-    if (!lastDoc || loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    const snap = await getDocs(query(
-      collection(db, 'board'),
-      orderBy('createdAt', 'desc'),
-      startAfter(lastDoc),
-      limit(PAGE),
-    ));
-    const docs = snap.docs;
-    setPosts(prev => [...prev, ...docs.map(d => ({ id: d.id, ...d.data() }))]);
-    setLastDoc(docs.length ? docs[docs.length - 1] : lastDoc);
-    setHasMore(docs.length === PAGE);
-    setLoadingMore(false);
+    setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   }
 
   async function loadPrefixes() {
@@ -114,6 +89,12 @@ export default function BoardPage() {
     const matchPrefix = !filterPrefix || p.prefix === filterPrefix;
     return matchSearch && matchPrefix;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const visiblePages = getVisiblePages(safePage, totalPages);
 
   async function handleSubmit() {
     if (!user) { router.push('/login'); return; }
@@ -131,7 +112,8 @@ export default function BoardPage() {
       setShowForm(false);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
       setDraft('');
-      await loadFirstPage();
+      await reloadPosts();
+      setCurrentPage(1);
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { setSubmitting(false); }
   }
@@ -232,7 +214,7 @@ export default function BoardPage() {
       {filtered.length === 0 ? (
         <p className="empty-msg">게시글이 없어요.</p>
       ) : (
-        filtered.map(p => (
+        pageItems.map(p => (
           <Link key={p.id} href={`/board/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="post-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -248,16 +230,57 @@ export default function BoardPage() {
         ))
       )}
 
-      {!search.trim() && hasMore && (
-        <button
-          type="button"
-          className="btn-primary"
-          style={{ marginTop: 16 }}
-          onClick={loadMore}
-          disabled={loadingMore}
-        >
-          {loadingMore ? '불러오는 중…' : '더 보기'}
-        </button>
+      {filtered.length > 0 && totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 16, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setCurrentPage(1)}
+            disabled={safePage === 1}
+            className="btn-sm btn-outline"
+            aria-label="첫 페이지"
+            style={{ minWidth: 32 }}
+          >«</button>
+          <button
+            type="button"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={safePage === 1}
+            className="btn-sm btn-outline"
+            aria-label="이전 페이지"
+            style={{ minWidth: 32 }}
+          >‹</button>
+          {visiblePages.map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setCurrentPage(n)}
+              className="btn-sm"
+              aria-current={n === safePage ? 'page' : undefined}
+              style={{
+                minWidth: 32,
+                background: n === safePage ? 'var(--accent)' : 'var(--tag-bg)',
+                color: n === safePage ? '#fff' : 'var(--accent)',
+                border: '1px solid var(--line)',
+                fontWeight: n === safePage ? 600 : 400,
+              }}
+            >{n}</button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={safePage === totalPages}
+            className="btn-sm btn-outline"
+            aria-label="다음 페이지"
+            style={{ minWidth: 32 }}
+          >›</button>
+          <button
+            type="button"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={safePage === totalPages}
+            className="btn-sm btn-outline"
+            aria-label="마지막 페이지"
+            style={{ minWidth: 32 }}
+          >»</button>
+        </div>
       )}
     </div>
   );
