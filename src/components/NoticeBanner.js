@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { dangerousHtml } from '@/lib/sanitize';
 
 export default function NoticeBanner() {
   const [notice, setNotice] = useState(null);
@@ -32,7 +33,7 @@ export default function NoticeBanner() {
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 18, color: 'var(--accent)' }}>{notice.title}</h2>
               <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: notice.content }} />
+            <div style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={dangerousHtml(notice.content)} />
             <div style={{ marginTop: 16, textAlign: 'right' }}>
               <button onClick={() => { setOpen(false); router.push(`/notice/${notice.id}`); }}
                 style={{ fontSize: 13, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>

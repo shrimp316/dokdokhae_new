@@ -1,15 +1,19 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, startAfter, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NoticeBanner from '@/components/NoticeBanner';
+import SearchBar from '@/components/SearchBar';
+import { stripHtml, matchAny } from '@/lib/searchUtils';
 import dynamic from 'next/dynamic';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
+
+const PAGE = 20;
 
 export default function BoardPage() {
   const { user, profile } = useAuth();
@@ -21,16 +25,47 @@ export default function BoardPage() {
   const [title, setTitle] = useState('');
   const [prefix, setPrefix] = useState('');
   const [content, setContent] = useState('');
-  const [imageFiles, setImageFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [prefixes, setPrefixes] = useState([]);
   const [filterPrefix, setFilterPrefix] = useState('');
   const [draft, setDraft] = useState('');
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    loadPosts();
     loadPrefixes();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      let snap;
+      if (search.trim()) {
+        snap = await getDocs(query(
+          collection(db, 'board'),
+          orderBy('createdAt', 'desc'),
+        ));
+        if (cancelled) return;
+        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLastDoc(null);
+        setHasMore(false);
+      } else {
+        snap = await getDocs(query(
+          collection(db, 'board'),
+          orderBy('createdAt', 'desc'),
+          limit(PAGE),
+        ));
+        if (cancelled) return;
+        const docs = snap.docs;
+        setPosts(docs.map(d => ({ id: d.id, ...d.data() })));
+        setLastDoc(docs.length ? docs[docs.length - 1] : null);
+        setHasMore(docs.length === PAGE);
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+  }, [search]);
 
   useEffect(() => {
     if (!user) { setDraft(''); return; }
@@ -39,9 +74,32 @@ export default function BoardPage() {
       .catch(() => {});
   }, [user]);
 
-  async function loadPosts() {
-    const snap = await getDocs(query(collection(db, 'board'), orderBy('createdAt', 'desc')));
-    setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  async function loadFirstPage() {
+    const snap = await getDocs(query(
+      collection(db, 'board'),
+      orderBy('createdAt', 'desc'),
+      limit(PAGE),
+    ));
+    const docs = snap.docs;
+    setPosts(docs.map(d => ({ id: d.id, ...d.data() })));
+    setLastDoc(docs.length ? docs[docs.length - 1] : null);
+    setHasMore(docs.length === PAGE);
+  }
+
+  async function loadMore() {
+    if (!lastDoc || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const snap = await getDocs(query(
+      collection(db, 'board'),
+      orderBy('createdAt', 'desc'),
+      startAfter(lastDoc),
+      limit(PAGE),
+    ));
+    const docs = snap.docs;
+    setPosts(prev => [...prev, ...docs.map(d => ({ id: d.id, ...d.data() }))]);
+    setLastDoc(docs.length ? docs[docs.length - 1] : lastDoc);
+    setHasMore(docs.length === PAGE);
+    setLoadingMore(false);
   }
 
   async function loadPrefixes() {
@@ -52,9 +110,7 @@ export default function BoardPage() {
   }
 
   const filtered = posts.filter(p => {
-    const matchSearch = !search ||
-      (p.title || '').toLowerCase().includes(search.toLowerCase()) ||
-      (p.nickname || '').toLowerCase().includes(search.toLowerCase());
+    const matchSearch = matchAny([p.title, stripHtml(p.content), p.nickname, p.prefix], search);
     const matchPrefix = !filterPrefix || p.prefix === filterPrefix;
     return matchSearch && matchPrefix;
   });
@@ -66,23 +122,16 @@ export default function BoardPage() {
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
     try {
-      let finalContent = content;
-      for (const file of imageFiles) {
-        const r = ref(storage, `board/${Date.now()}_${file.name}`);
-        await uploadBytes(r, file);
-        const url = await getDownloadURL(r);
-        finalContent += `<p><img src="${url}" style="max-width:100%;border-radius:8px" /></p>`;
-      }
       await addDoc(collection(db, 'board'), {
-        title: title.trim(), prefix, content: finalContent,
+        title: title.trim(), prefix, content,
         nickname: profile.nickname, uid: user.uid,
         createdAt: serverTimestamp(),
       });
-      setTitle(''); setPrefix(''); setContent(''); setImageFiles([]);
+      setTitle(''); setPrefix(''); setContent('');
       setShowForm(false);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
       setDraft('');
-      loadPosts();
+      await loadFirstPage();
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { setSubmitting(false); }
   }
@@ -109,37 +158,24 @@ export default function BoardPage() {
 
       {/* 검색 + 말머리 필터 */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 12, padding: '8px 14px', marginBottom: 8 }}>
-          {prefixes.length > 0 && (
-            <>
-              <select
-                value={filterPrefix}
-                onChange={e => setFilterPrefix(e.target.value)}
-                style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0, width: 'auto', padding: 0 }}
-              >
-                <option value="">전체 말머리</option>
-                {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
-              </select>
-              <div style={{ width: 1, height: 18, background: 'var(--line)', flexShrink: 0 }} />
-            </>
-          )}
-          <span style={{ color: 'var(--muted)', flexShrink: 0 }}>🔍</span>
-          <input
-            type="text"
-            placeholder="제목, 닉네임으로 검색…"
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') setSearch(searchInput); }}
-            style={{ border: 'none', background: 'none', outline: 'none', fontSize: 14, flex: 1, minWidth: 0, width: 'auto', padding: 0 }}
-          />
-        </div>
-        <button
-          onClick={() => setSearch(searchInput)}
-          className="btn-primary"
-          style={{ padding: '10px 0' }}
-        >
-          검색
-        </button>
+        {prefixes.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 12, padding: '8px 14px', marginBottom: 8 }}>
+            <select
+              value={filterPrefix}
+              onChange={e => setFilterPrefix(e.target.value)}
+              style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0, width: 'auto', padding: 0 }}
+            >
+              <option value="">전체 말머리</option>
+              {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+            </select>
+          </div>
+        )}
+        <SearchBar
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmit={v => setSearch(v)}
+          placeholder="제목, 내용, 닉네임, 말머리로 검색…"
+        />
       </div>
 
       {/* 글쓰기 버튼 */}
@@ -171,26 +207,17 @@ export default function BoardPage() {
           )}
           <input type="text" placeholder="제목" value={title} onChange={e => setTitle(e.target.value)} style={{ marginBottom: 8 }} />
           <div style={{ marginBottom: 8 }}>
-            <QuillEditor value={content} onChange={setContent} placeholder="내용을 입력해주세요…" minHeight={160} />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--muted)', border: '1.5px dashed var(--line)', borderRadius: 8, padding: '7px 14px' }}>
-              📎 사진 첨부 (여러 장 가능)
-              <input type="file" accept="image/*" multiple onChange={e => setImageFiles(Array.from(e.target.files))} style={{ display: 'none' }} />
-            </label>
-            {imageFiles.length > 0 && (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                {imageFiles.map((f, i) => (
-                  <div key={i} style={{ position: 'relative' }}>
-                    <img src={URL.createObjectURL(f)} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1.5px solid var(--line)' }} />
-                    <button
-                      onClick={() => setImageFiles(imageFiles.filter((_, j) => j !== i))}
-                      style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#e55', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
-                    >✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <QuillEditor
+              value={content}
+              onChange={setContent}
+              placeholder="내용을 입력해주세요…"
+              minHeight={160}
+              onImageUpload={async (file) => {
+                const r = ref(storage, `board/${Date.now()}_${file.name}`);
+                await uploadBytes(r, file);
+                return getDownloadURL(r);
+              }}
+            />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={saveDraft} className="btn-sm btn-outline" style={{ flex: 1 }}>임시저장</button>
@@ -219,6 +246,18 @@ export default function BoardPage() {
             </div>
           </Link>
         ))
+      )}
+
+      {!search.trim() && hasMore && (
+        <button
+          type="button"
+          className="btn-primary"
+          style={{ marginTop: 16 }}
+          onClick={loadMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? '불러오는 중…' : '더 보기'}
+        </button>
       )}
     </div>
   );

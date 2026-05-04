@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import ReviewCard from '@/components/ReviewCard';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -13,6 +14,7 @@ export default function BookReviewsPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
   const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
 
   const [book, setBook] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -23,7 +25,6 @@ export default function BookReviewsPage({ params }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [editRating, setEditRating] = useState(0);
-  const [imageFile, setImageFile] = useState(null);
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -63,17 +64,12 @@ export default function BookReviewsPage({ params }) {
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
     try {
-      let finalContent = content;
-      if (imageFile) {
-        const url = await uploadImage(imageFile);
-        finalContent += `<p><img src="${url}" style="max-width:100%;border-radius:8px" /></p>`;
-      }
       await addDoc(collection(db, 'reviews'), {
-        bookId: id, content: finalContent, rating,
+        bookId: id, content, rating,
         nickname: profile.nickname, uid: user.uid,
         createdAt: serverTimestamp(),
       });
-      setContent(''); setRating(0); setImageFile(null);
+      setContent(''); setRating(0);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`)); } catch {}
       setDraft('');
       loadReviews();
@@ -159,13 +155,13 @@ export default function BookReviewsPage({ params }) {
 
           {/* Quill */}
           <div style={{ marginBottom: 10 }}>
-            <QuillEditor value={content} onChange={setContent} placeholder="이 책 어떠셨나요? 자유롭게 적어주세요!" minHeight={160} />
-          </div>
-
-          {/* 이미지 업로드 */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-            <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} style={{ flex: 1, fontSize: 12 }} />
-            {imageFile && <span style={{ fontSize: 12, color: 'var(--accent2)' }}>📎 {imageFile.name}</span>}
+            <QuillEditor
+              value={content}
+              onChange={setContent}
+              placeholder="이 책 어떠셨나요? 자유롭게 적어주세요!"
+              minHeight={160}
+              onImageUpload={uploadImage}
+            />
           </div>
 
           {draft && (
@@ -194,42 +190,36 @@ export default function BookReviewsPage({ params }) {
         <p className="empty-msg">아직 감상평이 없어요. 첫 번째로 남겨보세요!</p>
       ) : (
         reviews.map(r => (
-          <div key={r.id} className="review-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, fontWeight: 500 }}>✏️ {r.nickname}</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>
-                {r.createdAt?.toDate ? `${r.createdAt.toDate().getMonth()+1}/${r.createdAt.toDate().getDate()}` : ''}
-              </span>
-              {(user?.uid === r.uid) && (
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button className="btn-sm btn-outline" onClick={() => { setEditingId(r.id); setEditContent(r.content); setEditRating(r.rating || 0); }}>수정</button>
-                  <button className="btn-sm btn-danger" onClick={() => handleDelete(r.id)}>삭제</button>
-                </div>
-              )}
-            </div>
-            {r.rating > 0 && (
+          editingId === r.id ? (
+            <div key={r.id} className="review-card">
               <div style={{ marginBottom: 6 }}>
-                {[1,2,3,4,5].map(n => <span key={n} style={{ color: n <= r.rating ? '#f0a500' : 'var(--line)', fontSize: 14 }}>★</span>)}
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} type="button" onClick={() => setEditRating(n)}
+                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0 }}>★</button>
+                ))}
               </div>
-            )}
-            {editingId === r.id ? (
-              <div>
-                <div style={{ marginBottom: 6 }}>
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} type="button" onClick={() => setEditRating(n)}
-                      style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0 }}>★</button>
-                  ))}
-                </div>
-                <QuillEditor value={editContent} onChange={setEditContent} placeholder="내용 수정…" minHeight={120} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>
-                  <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }} onClick={() => handleEdit(r.id)}>수정 완료</button>
-                </div>
+              <QuillEditor
+                value={editContent}
+                onChange={setEditContent}
+                placeholder="내용 수정…"
+                minHeight={120}
+                onImageUpload={uploadImage}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>
+                <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff' }} onClick={() => handleEdit(r.id)}>수정 완료</button>
               </div>
-            ) : (
-              <div className="review-content" dangerouslySetInnerHTML={{ __html: r.content }} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <ReviewCard
+              key={r.id}
+              review={r}
+              bookTitle={book?.title}
+              isAdmin={isAdmin}
+              onEdit={(rev) => { setEditingId(rev.id); setEditContent(rev.content); setEditRating(rev.rating || 0); }}
+              onDelete={(rev) => handleDelete(rev.id)}
+            />
+          )
         ))
       )}
     </div>

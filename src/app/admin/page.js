@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -765,7 +766,17 @@ export default function AdminPage() {
           <h3 style={h3Style}>📢 공지 추가</h3>
           <input placeholder="공지 제목" value={newNotice.title} onChange={e => setNewNotice({...newNotice, title: e.target.value})} style={{ marginBottom: 8 }} />
           <div style={{ marginBottom: 8 }}>
-            <QuillEditor value={newNotice.content} onChange={v => setNewNotice({...newNotice, content: v})} placeholder="공지 내용…" minHeight={120} />
+            <QuillEditor
+              value={newNotice.content}
+              onChange={v => setNewNotice({...newNotice, content: v})}
+              placeholder="공지 내용…"
+              minHeight={120}
+              onImageUpload={async (file) => {
+                const r = ref(storage, `notices/${Date.now()}_${file.name}`);
+                await uploadBytes(r, file);
+                return getDownloadURL(r);
+              }}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <input type="checkbox" id="pinned" checked={newNotice.pinned} onChange={e => setNewNotice({...newNotice, pinned: e.target.checked})} style={{ width: 'auto' }} />
@@ -780,7 +791,17 @@ export default function AdminPage() {
                   <div style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
                     <input value={editNotice.title} onChange={e => setEditNotice({...editNotice, title: e.target.value})} style={{ marginBottom: 8 }} />
                     <div style={{ marginBottom: 8 }}>
-                      <QuillEditor value={editNotice.content} onChange={v => setEditNotice({...editNotice, content: v})} placeholder="내용…" minHeight={100} />
+                      <QuillEditor
+                        value={editNotice.content}
+                        onChange={v => setEditNotice({...editNotice, content: v})}
+                        placeholder="내용…"
+                        minHeight={100}
+                        onImageUpload={async (file) => {
+                          const r = ref(storage, `notices/${Date.now()}_${file.name}`);
+                          await uploadBytes(r, file);
+                          return getDownloadURL(r);
+                        }}
+                      />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <input type="checkbox" checked={editNotice.pinned} onChange={e => setEditNotice({...editNotice, pinned: e.target.checked})} style={{ width: 'auto' }} />
@@ -795,8 +816,9 @@ export default function AdminPage() {
                   <div style={listItemStyle}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 500 }}>{n.pinned ? '📌 ' : ''}{n.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        dangerouslySetInnerHTML={{ __html: (n.content||'').replace(/<[^>]+>/g,'').slice(0,40) + '…' }} />
+                      <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {(n.content||'').replace(/<[^>]+>/g,'').slice(0,40) + '…'}
+                      </div>
                     </div>
                     {!n.pinned && <button className="btn-sm btn-outline" onClick={() => setPinned(n.id)}>고정</button>}
                     <button className="btn-sm btn-outline" onClick={() => { setEditingNoticeId(n.id); setEditNotice({ title: n.title, content: n.content, pinned: n.pinned }); }}>수정</button>

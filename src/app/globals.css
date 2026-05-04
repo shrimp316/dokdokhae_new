@@ -162,6 +162,18 @@ textarea { resize: vertical; min-height: 80px; }
 
 .post-content img { cursor: zoom-in; }
 
+.post-content img.img-sm,
+.review-content img.img-sm,
+.ql-editor img.img-sm { max-width: 40%; }
+
+.post-content img.img-md,
+.review-content img.img-md,
+.ql-editor img.img-md { max-width: 75%; }
+
+.post-content img.img-lg,
+.review-content img.img-lg,
+.ql-editor img.img-lg { max-width: 100%; }
+
 /* ── 모달 ── */
 .modal-overlay {
   position: fixed; inset: 0;

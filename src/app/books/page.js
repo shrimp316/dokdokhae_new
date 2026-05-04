@@ -3,9 +3,13 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import SearchBar from '@/components/SearchBar';
+import { matchAny } from '@/lib/searchUtils';
 
 export default function BooksPage() {
   const [books, setBooks] = useState([]);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -13,14 +17,22 @@ export default function BooksPage() {
       .then(snap => setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, []);
 
+  const filtered = books.filter(b => matchAny([b.title, b.author, b.genre], search));
+
   return (
     <div>
       <div className="section-title">역대 도서 목록</div>
-      {!books.length ? (
+      <SearchBar
+        value={searchInput}
+        onChange={setSearchInput}
+        onSubmit={v => setSearch(v)}
+        placeholder="책 제목, 저자, 장르로 검색…"
+      />
+      {!filtered.length ? (
         <p className="empty-msg">등록된 책이 없어요.</p>
       ) : (
         <div className="books-grid">
-          {books.map(b => (
+          {filtered.map(b => (
             <div
               key={b.id}
               onClick={() => router.push(`/books/${b.id}`)}

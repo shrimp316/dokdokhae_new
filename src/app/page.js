@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { dangerousHtml } from '@/lib/sanitize';
+import ContentLightbox from '@/components/ContentLightbox';
 
 function formatDateTime(str) {
   if (!str) return '';
@@ -136,7 +138,9 @@ export default function HomePage() {
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 18, color: 'var(--accent)' }}>{pinnedNotice.title}</h2>
               <button onClick={() => setNoticeOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }} dangerouslySetInnerHTML={{ __html: pinnedNotice.content }} />
+            <ContentLightbox contentStyle={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+              <div dangerouslySetInnerHTML={dangerousHtml(pinnedNotice.content)} />
+            </ContentLightbox>
             <div style={{ marginTop: 16, textAlign: 'right' }}>
               <Link href={`/notice/${pinnedNotice.id}`} style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'underline' }} onClick={() => setNoticeOpen(false)}>
                 전체 보기 →

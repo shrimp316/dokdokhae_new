@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function onlyLikeCountChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount']);
+    }
+
+    // 사용자 프로필
+    match /users/{uid} {
+      allow read: if true;
+      allow create, update: if isOwner(uid);
+      allow delete: if isAdmin();
+
+      match /drafts/{key} {
+        allow read, write: if isOwner(uid);
+      }
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // 자유게시판
+    match /board/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if (isOwner(resource.data.uid) || isAdmin())
+        || (isSignedIn() && onlyLikeCountChanged());
+      allow delete: if isOwner(resource.data.uid) || isAdmin();
+
+      match /likes/{uid} {
+        allow read: if true;
+        allow create, delete: if isOwner(uid);
+      }
+      match /comments/{cid} {
+        allow read: if true;
+        allow create: if isSignedIn() &&
+          request.resource.data.uid == request.auth.uid;
+        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+      }
+    }
+
+    // 책 목록 (관리자만 작성)
+    match /books/{bookId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 감상평
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if (isOwner(resource.data.uid) || isAdmin())
+        || (isSignedIn() && onlyLikeCountChanged());
+      allow delete: if isOwner(resource.data.uid) || isAdmin();
+
+      match /likes/{uid} {
+        allow read: if true;
+        allow create, delete: if isOwner(uid);
+      }
+      match /comments/{cid} {
+        allow read: if true;
+        allow create: if isSignedIn() &&
+          request.resource.data.uid == request.auth.uid;
+        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+      }
+    }
+
+    // 공지사항
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 게시판 말머리
+    match /boardPrefixes/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 토론 질문
+    match /bookQuestions/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 모임 일정
+    match /meetings/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 이주의/이달의 발췌문
+    match /featuredPassages/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      match /comments/{cid} {
+        allow read: if true;
+        allow create: if isSignedIn() &&
+          request.resource.data.uid == request.auth.uid;
+        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+      }
+    }
+  }
+}

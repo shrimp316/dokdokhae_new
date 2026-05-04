@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
+import { dangerousHtml } from '@/lib/sanitize';
+import ContentLightbox from '@/components/ContentLightbox';
+
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
 export default function FeaturedDetailPage({ params }) {
@@ -184,11 +187,12 @@ export default function FeaturedDetailPage({ params }) {
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className="ql-editor ql-snow"
-                    style={{ fontSize: 14, lineHeight: 1.7, padding: 0, border: 'none' }}
-                    dangerouslySetInnerHTML={{ __html: c.content }}
-                  />
+                  <ContentLightbox
+                    contentClassName="ql-editor ql-snow"
+                    contentStyle={{ fontSize: 14, lineHeight: 1.7, padding: 0, border: 'none' }}
+                  >
+                    <div dangerouslySetInnerHTML={dangerousHtml(c.content)} />
+                  </ContentLightbox>
                 )}
 
                 {/* 답글 입력 */}

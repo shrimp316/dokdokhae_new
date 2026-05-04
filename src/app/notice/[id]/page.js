@@ -3,6 +3,8 @@ import { useEffect, useState, use } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { dangerousHtml } from '@/lib/sanitize';
+import ContentLightbox from '@/components/ContentLightbox';
 
 export default function NoticePostPage({ params }) {
   const { id } = use(params);
@@ -29,7 +31,9 @@ export default function NoticePostPage({ params }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {formatDate(post.createdAt)}
         </div>
-        <div style={{ fontSize: 14, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: post.content }} />
+        <ContentLightbox contentStyle={{ fontSize: 14, lineHeight: 1.8 }}>
+          <div dangerouslySetInnerHTML={dangerousHtml(post.content)} />
+        </ContentLightbox>
       </div>
     </div>
   );
