@@ -65,22 +65,26 @@ export default function HomePage() {
       )}
 
       {/* 이 주/달의 글 배너 */}
-      {activePassage && (
-        <Link href={`/featured/${activePassage.id}`} style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
-          <div className="card" style={{ padding: 18, borderLeft: '3px solid var(--accent2)', cursor: 'pointer' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-              {activePassage.period === 'weekly' ? '📝 이 주의 글' : '📝 이 달의 글'}
+      {activePassage && (() => {
+        const t = activePassage.excerpt || activePassage.curatorNote || activePassage.passage || '';
+        const quoted = activePassage.kind === 'public_domain';
+        return (
+          <Link href={`/featured/${activePassage.id}`} style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
+            <div className="card" style={{ padding: 18, borderLeft: '3px solid var(--accent2)', cursor: 'pointer' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                {activePassage.period === 'weekly' ? '📝 이 주의 글' : '📝 이 달의 글'}
+              </div>
+              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 14, lineHeight: 1.8, color: 'var(--text)', marginBottom: 8, whiteSpace: 'pre-line' }}>
+                {quoted ? `"${t.slice(0, 100)}${t.length > 100 ? '…' : ''}"` : `${t.slice(0, 100)}${t.length > 100 ? '…' : ''}`}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--muted)' }}>
+                — {activePassage.bookTitle}{activePassage.bookAuthor ? ` / ${activePassage.bookAuthor}` : ''}
+                {activePassage.questions?.length > 0 && <span style={{ color: 'var(--accent)', marginLeft: 8 }}>· 💬 질문 {activePassage.questions.length}개</span>}
+              </p>
             </div>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 14, lineHeight: 1.8, color: 'var(--text)', marginBottom: 8, whiteSpace: 'pre-line' }}>
-              "{activePassage.passage?.slice(0, 100)}{activePassage.passage?.length > 100 ? '…' : ''}"
-            </p>
-            <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-              — {activePassage.bookTitle}{activePassage.bookAuthor ? ` / ${activePassage.bookAuthor}` : ''}
-              {activePassage.questions?.length > 0 && <span style={{ color: 'var(--accent)', marginLeft: 8 }}>· 💬 질문 {activePassage.questions.length}개</span>}
-            </p>
-          </div>
-        </Link>
-      )}
+          </Link>
+        );
+      })()}
 
       {/* 이달의 책 */}
       {featured ? (

@@ -10,6 +10,18 @@ import { stripHtml } from '@/lib/searchUtils';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
+const INITIAL_PASSAGE = {
+  kind: 'curator_intro',
+  bookTitle: '', bookAuthor: '', bookId: '',
+  bookDescription: '',
+  excerpt: '', curatorNote: '',
+  period: 'weekly', questions: [],
+  source: '', sourceType: 'manual', sourceUrl: '',
+  publicDomain: false,
+  aiGeneratedNote: false,
+  aiGeneratedQuestions: false,
+};
+
 export default function AdminPage() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -53,13 +65,23 @@ export default function AdminPage() {
 
   // 이 주/달의 글
   const [passages, setPassages] = useState([]);
-  const [passageMode, setPassageMode] = useState('ai'); // 'ai' | 'manual'
-  const [newPassage, setNewPassage] = useState({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
+  const [passageMode, setPassageMode] = useState('curator'); // 'curator' | 'pd' | 'manual'
+  const [newPassage, setNewPassage] = useState(INITIAL_PASSAGE);
   const [newPassageQuestion, setNewPassageQuestion] = useState('');
   const [aiPassageLoading, setAiPassageLoading] = useState(false);
   const [editingPassageId, setEditingPassageId] = useState(null);
-  const [editPassage, setEditPassage] = useState({ bookTitle: '', bookAuthor: '', passage: '', questions: [], source: '' });
+  const [editPassage, setEditPassage] = useState({ bookTitle: '', bookAuthor: '', kind: 'curator_intro', excerpt: '', curatorNote: '', passage: '', questions: [], source: '', sourceType: 'manual', sourceUrl: '', publicDomain: false });
   const [editPassageQuestion, setEditPassageQuestion] = useState('');
+
+  // Curator 모드 책 검색
+  const [passageBookSearch, setPassageBookSearch] = useState('');
+  const [passageKakaoResults, setPassageKakaoResults] = useState([]);
+
+  // PD 모드 Gutendex 검색
+  const [pdSearchQuery, setPdSearchQuery] = useState('');
+  const [pdSearchResults, setPdSearchResults] = useState([]);
+  const [pdSearchLoading, setPdSearchLoading] = useState(false);
+  const [pdTextLoading, setPdTextLoading] = useState(false);
 
   useEffect(() => {
     if (isAdmin) { loadAll(); }
@@ -177,15 +199,44 @@ export default function AdminPage() {
   }
 
   async function addPassage() {
-    if (passageMode === 'manual' && !newPassage.bookTitle) { alert('책 제목을 입력해주세요.'); return; }
-    if (!newPassage.passage) { alert('발췌문을 입력해주세요.'); return; }
+    const kind = passageMode === 'pd' ? 'public_domain' : 'curator_intro';
+    if (!newPassage.bookTitle?.trim()) { alert('책 제목을 입력해주세요.'); return; }
+    if (kind === 'public_domain' && !newPassage.excerpt?.trim()) { alert('원문 발췌가 필요합니다.'); return; }
+    if (kind === 'curator_intro' && !newPassage.curatorNote?.trim() && !newPassage.excerpt?.trim()) {
+      alert('큐레이터 코멘트 또는 발췌문을 입력해주세요.'); return;
+    }
+    if (newPassage.excerpt?.trim() && !newPassage.source?.trim() && !newPassage.sourceUrl?.trim()) {
+      alert('직접 인용을 사용할 때는 출처(텍스트) 또는 출처 URL이 필요합니다.'); return;
+    }
     const periodKey = getPeriodKey(newPassage.period);
+    const passageBackcompat = newPassage.excerpt?.trim() || newPassage.curatorNote?.trim() || '';
     await addDoc(collection(db, 'featuredPassages'), {
-      ...newPassage, periodKey, year: new Date().getFullYear(),
-      isActive: false, createdAt: serverTimestamp(),
+      kind,
+      bookTitle: newPassage.bookTitle,
+      bookAuthor: newPassage.bookAuthor,
+      bookId: newPassage.bookId || '',
+      excerpt: newPassage.excerpt || '',
+      curatorNote: newPassage.curatorNote || '',
+      passage: passageBackcompat,
+      period: newPassage.period,
+      periodKey,
+      questions: newPassage.questions || [],
+      source: newPassage.source || '',
+      sourceType: newPassage.sourceType || (kind === 'public_domain' ? 'gutendex' : 'manual'),
+      sourceUrl: newPassage.sourceUrl || '',
+      publicDomain: kind === 'public_domain' ? true : !!newPassage.publicDomain,
+      aiGenerated: {
+        curatorNote: !!newPassage.aiGeneratedNote,
+        questions: !!newPassage.aiGeneratedQuestions,
+      },
+      year: new Date().getFullYear(),
+      isActive: false,
+      createdAt: serverTimestamp(),
     });
-    setNewPassage({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' });
+    setNewPassage(INITIAL_PASSAGE);
     setNewPassageQuestion('');
+    setPassageKakaoResults([]); setPassageBookSearch('');
+    setPdSearchResults([]); setPdSearchQuery('');
     loadPassages();
     alert('등록되었어요!');
   }
@@ -206,38 +257,153 @@ export default function AdminPage() {
   }
 
   async function saveEditPassage(id) {
-    if (!editPassage.bookTitle.trim()) { alert('책 제목을 입력해주세요.'); return; }
-    if (!editPassage.passage.trim()) { alert('발췌문을 입력해주세요.'); return; }
+    if (!editPassage.bookTitle?.trim()) { alert('책 제목을 입력해주세요.'); return; }
+    const kind = editPassage.kind || 'curator_intro';
+    if (kind === 'public_domain' && !editPassage.excerpt?.trim()) {
+      alert('원문 발췌가 필요합니다.'); return;
+    }
+    if (kind === 'curator_intro' && !editPassage.curatorNote?.trim() && !editPassage.excerpt?.trim() && !editPassage.passage?.trim()) {
+      alert('큐레이터 코멘트 또는 발췌문이 필요합니다.'); return;
+    }
+    const passageBackcompat = editPassage.excerpt?.trim() || editPassage.curatorNote?.trim() || editPassage.passage?.trim() || '';
     await updateDoc(doc(db, 'featuredPassages', id), {
       bookTitle: editPassage.bookTitle,
       bookAuthor: editPassage.bookAuthor,
-      passage: editPassage.passage,
+      kind,
+      excerpt: editPassage.excerpt || '',
+      curatorNote: editPassage.curatorNote || '',
+      passage: passageBackcompat,
       questions: editPassage.questions,
       source: editPassage.source,
+      sourceType: editPassage.sourceType || 'manual',
+      sourceUrl: editPassage.sourceUrl || '',
+      publicDomain: kind === 'public_domain' ? true : !!editPassage.publicDomain,
     });
     setEditingPassageId(null);
     loadPassages();
   }
 
   async function generateAIPassage() {
+    const kind = passageMode === 'pd' ? 'public_domain' : 'curator_intro';
+    if (!newPassage.bookTitle?.trim() || !newPassage.bookAuthor?.trim()) {
+      alert('먼저 책을 선택해주세요 (제목·저자 필요).'); return;
+    }
+    if (kind === 'public_domain' && !newPassage.excerpt?.trim()) {
+      alert('원문 발췌를 먼저 입력해주세요.'); return;
+    }
     setAiPassageLoading(true);
     try {
       const res = await fetch('/api/ai-passage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          kind,
+          bookTitle: newPassage.bookTitle,
+          bookAuthor: newPassage.bookAuthor,
+          bookDescription: newPassage.bookDescription || '',
+          excerpt: newPassage.excerpt || '',
+        }),
       });
       const data = await res.json();
       if (data.error) { alert('AI 오류: ' + data.error); return; }
       setNewPassage(prev => ({
         ...prev,
-        bookTitle: data.bookTitle || prev.bookTitle,
-        bookAuthor: data.bookAuthor || prev.bookAuthor,
-        passage: data.passage || prev.passage,
-        questions: data.questions || prev.questions,
+        curatorNote: data.curatorNote || prev.curatorNote,
+        questions: data.questions?.length ? data.questions : prev.questions,
+        aiGeneratedNote: !!data.curatorNote,
+        aiGeneratedQuestions: !!(data.questions && data.questions.length),
       }));
     } catch (e) { alert('생성 실패: ' + e.message); }
     setAiPassageLoading(false);
+  }
+
+  async function searchKakaoForPassage() {
+    if (!passageBookSearch.trim()) return;
+    try {
+      const res = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(passageBookSearch)}&size=5`, {
+        headers: { Authorization: `KakaoAK ${process.env.NEXT_PUBLIC_KAKAO_API_KEY}` }
+      });
+      const data = await res.json();
+      setPassageKakaoResults(data.documents || []);
+    } catch (e) { alert('검색 실패: ' + e.message); }
+  }
+
+  function selectPassageKakaoBook(b) {
+    setNewPassage(prev => ({
+      ...prev,
+      bookTitle: b.title,
+      bookAuthor: (b.authors || []).join(', '),
+      bookDescription: b.contents || '',
+      bookId: '',
+    }));
+    setPassageKakaoResults([]);
+    setPassageBookSearch('');
+  }
+
+  function selectPassageBookFromCollection(bookId) {
+    if (!bookId) {
+      setNewPassage(prev => ({ ...prev, bookId: '', bookTitle: '', bookAuthor: '', bookDescription: '' }));
+      return;
+    }
+    const b = books.find(x => x.id === bookId);
+    if (!b) return;
+    setNewPassage(prev => ({
+      ...prev,
+      bookId,
+      bookTitle: b.title || prev.bookTitle,
+      bookAuthor: b.author || prev.bookAuthor,
+      bookDescription: b.description || prev.bookDescription,
+    }));
+  }
+
+  async function searchGutendex() {
+    if (!pdSearchQuery.trim()) return;
+    setPdSearchLoading(true);
+    try {
+      const res = await fetch(`/api/pd-search?q=${encodeURIComponent(pdSearchQuery)}&lang=ko`);
+      const data = await res.json();
+      if (data.error) { alert('검색 실패: ' + data.error); setPdSearchResults([]); return; }
+      setPdSearchResults(data.books || []);
+    } catch (e) { alert('검색 실패: ' + e.message); }
+    setPdSearchLoading(false);
+  }
+
+  async function selectGutendexBook(b) {
+    const txtKey = Object.keys(b.formats || {}).find(k => k.startsWith('text/plain'));
+    const htmlKey = Object.keys(b.formats || {}).find(k => k.startsWith('text/html'));
+    const sourceUrl = (txtKey && b.formats[txtKey]) || (htmlKey && b.formats[htmlKey]) || '';
+    let preview = '';
+    if (txtKey) {
+      setPdTextLoading(true);
+      try {
+        const res = await fetch(`/api/pd-search?proxy=${encodeURIComponent(b.formats[txtKey])}`);
+        if (res.ok) {
+          const text = await res.text();
+          const start = text.indexOf('*** START');
+          const end = text.indexOf('*** END');
+          let body = text;
+          if (start >= 0) {
+            const nl = text.indexOf('\n', start);
+            body = end > start ? text.slice(nl + 1, end) : text.slice(nl + 1);
+          }
+          preview = body.trim().slice(0, 1500);
+        }
+      } catch {}
+      setPdTextLoading(false);
+    }
+    setNewPassage(prev => ({
+      ...prev,
+      kind: 'public_domain',
+      bookTitle: b.title || '',
+      bookAuthor: (b.authors || []).join(', '),
+      bookDescription: '',
+      excerpt: preview,
+      sourceType: 'gutendex',
+      sourceUrl,
+      publicDomain: true,
+      bookId: '',
+    }));
+    setPdSearchResults([]);
   }
 
   async function addScheduledNotif() {
@@ -551,11 +717,11 @@ export default function AdminPage() {
         <div style={sectionStyle}>
           <h3 style={h3Style}>📝 이 주/달의 글 등록</h3>
 
-          {/* AI / 직접 입력 모드 선택 */}
+          {/* 모드 선택 (3-way) */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-            {[['ai', '🤖 AI 자동 생성'], ['manual', '✏️ 직접 입력']].map(([key, label]) => (
-              <button key={key} onClick={() => { setPassageMode(key); setNewPassage({ bookTitle: '', bookAuthor: '', bookId: '', passage: '', period: 'weekly', questions: [], source: '' }); setNewPassageQuestion(''); }}
-                style={{ flex: 1, padding: '9px 0', border: '1.5px solid var(--line)', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: passageMode === key ? 'var(--accent)' : 'var(--card)', color: passageMode === key ? '#fff' : 'var(--muted)' }}>
+            {[['curator', '✍️ 큐레이터 소개'], ['pd', '📜 원문 발췌'], ['manual', '✏️ 직접 입력']].map(([key, label]) => (
+              <button key={key} onClick={() => { setPassageMode(key); setNewPassage({ ...INITIAL_PASSAGE, kind: key === 'pd' ? 'public_domain' : 'curator_intro' }); setNewPassageQuestion(''); setPassageKakaoResults([]); setPassageBookSearch(''); setPdSearchResults([]); setPdSearchQuery(''); }}
+                style={{ flex: 1, padding: '9px 0', border: '1.5px solid var(--line)', borderRadius: 8, fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: passageMode === key ? 'var(--accent)' : 'var(--card)', color: passageMode === key ? '#fff' : 'var(--muted)' }}>
                 {label}
               </button>
             ))}
@@ -567,30 +733,116 @@ export default function AdminPage() {
             <option value="monthly">📆 월간</option>
           </select>
 
-          {/* AI 모드 */}
-          {passageMode === 'ai' && (
+          {/* Curator 모드 */}
+          {passageMode === 'curator' && (
             <>
-              <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading}
-                style={{ marginBottom: 12, width: '100%' }}>
-                {aiPassageLoading ? '🤖 AI가 책을 고르고 발췌문을 생성하고 있어요…' : '🤖 AI가 책 선택 + 발췌문 + 질문 자동 생성'}
-              </button>
-
-              {newPassage.passage && (
-                <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>AI가 생성한 결과 — 내용을 확인 후 등록하세요</p>
-                  <p style={{ fontSize: 13, fontWeight: 500 }}>{newPassage.bookTitle} {newPassage.bookAuthor && `/ ${newPassage.bookAuthor}`}</p>
-                  <p style={{ fontSize: 13, lineHeight: 1.7, marginTop: 6, whiteSpace: 'pre-line' }}>{newPassage.passage}</p>
-                  {newPassage.questions.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {newPassage.questions.map((q, i) => <p key={i} style={{ fontSize: 12, color: 'var(--muted)' }}>{i+1}. {q}</p>)}
-                    </div>
-                  )}
+              {/* 책 선택 — 시스템 내 books */}
+              <select value={newPassage.bookId} onChange={e => selectPassageBookFromCollection(e.target.value)} style={{ marginBottom: 8 }}>
+                <option value="">시스템 내 책에서 선택</option>
+                {books.map(b => <option key={b.id} value={b.id}>{b.title}{b.author ? ` / ${b.author}` : ''}</option>)}
+              </select>
+              {/* 또는 카카오 검색 */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input placeholder="또는 책 제목으로 검색…" value={passageBookSearch} onChange={e => setPassageBookSearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchKakaoForPassage()} style={{ flex: 1 }} />
+                <button className="btn-sm btn-outline" onClick={searchKakaoForPassage} style={{ flexShrink: 0 }}>검색</button>
+              </div>
+              {passageKakaoResults.map((b, i) => (
+                <div key={i} onClick={() => selectPassageKakaoBook(b)} style={{ display: 'flex', gap: 10, padding: 8, cursor: 'pointer', borderRadius: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--tag-bg)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  {b.thumbnail && <img src={b.thumbnail} style={{ width: 36, height: 50, objectFit: 'cover', borderRadius: 4 }} />}
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{b.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{(b.authors||[]).join(', ')} · {b.publisher}</div>
+                  </div>
                 </div>
+              ))}
+              {/* 선택된 책 표시 */}
+              {newPassage.bookTitle && (
+                <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 10, marginBottom: 8, fontSize: 13 }}>
+                  <strong>{newPassage.bookTitle}</strong>{newPassage.bookAuthor && ` / ${newPassage.bookAuthor}`}
+                </div>
+              )}
+              {/* 책 소개 (AI 컨텍스트) */}
+              <textarea placeholder="책 소개 (AI 컨텍스트로 사용, 자동 채워짐)" value={newPassage.bookDescription}
+                onChange={e => setNewPassage({...newPassage, bookDescription: e.target.value})}
+                style={{ marginBottom: 8, minHeight: 60, fontSize: 12, resize: 'vertical' }} />
+              {/* AI 생성 버튼 */}
+              <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading || !newPassage.bookTitle}
+                style={{ marginBottom: 8, width: '100%' }}>
+                {aiPassageLoading ? '🤖 큐레이터 코멘트 생성 중…' : '🤖 큐레이터 코멘트 + 토론 질문 생성'}
+              </button>
+              {/* 큐레이터 코멘트 */}
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>큐레이터 코멘트 (2문단)</p>
+              <textarea value={newPassage.curatorNote}
+                onChange={e => setNewPassage({...newPassage, curatorNote: e.target.value, aiGeneratedNote: false})}
+                style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
+              {/* 짧은 직접 인용 (선택) */}
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>짧은 직접 인용 (1~2문장, 선택) — 입력 시 출처 필수</p>
+              <textarea placeholder='예: "이 책에서 작가는 ... 라고 썼다." (큰따옴표 없이 본문만)' value={newPassage.excerpt}
+                onChange={e => setNewPassage({...newPassage, excerpt: e.target.value})}
+                style={{ marginBottom: 8, minHeight: 60, fontSize: 13, resize: 'vertical' }} />
+              {newPassage.excerpt && (
+                <input placeholder="출처 표기 * (예: 책 제목, 출판사, 페이지)" value={newPassage.source}
+                  onChange={e => setNewPassage({...newPassage, source: e.target.value})}
+                  style={{ marginBottom: 8 }} />
               )}
             </>
           )}
 
-          {/* 직접 입력 모드 */}
+          {/* PD 모드 */}
+          {passageMode === 'pd' && (
+            <>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
+                💡 Project Gutenberg(저작권 만료 작품)에서 책을 검색합니다. 한국어 작품이 한정적이라 결과가 적을 수 있어요.
+              </p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input placeholder="책 제목 검색…" value={pdSearchQuery} onChange={e => setPdSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchGutendex()} style={{ flex: 1 }} />
+                <button className="btn-sm btn-outline" onClick={searchGutendex} disabled={pdSearchLoading} style={{ flexShrink: 0 }}>
+                  {pdSearchLoading ? '검색 중…' : '검색'}
+                </button>
+              </div>
+              {pdSearchResults.map((b) => (
+                <div key={b.id} onClick={() => selectGutendexBook(b)} style={{ padding: 8, cursor: 'pointer', borderRadius: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--tag-bg)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{b.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>{(b.authors||[]).join(', ')}</div>
+                </div>
+              ))}
+              {pdTextLoading && <p style={{ fontSize: 12, color: 'var(--muted)' }}>📥 본문 가져오는 중…</p>}
+              {newPassage.bookTitle && (
+                <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 10, marginBottom: 8, fontSize: 13 }}>
+                  <strong>{newPassage.bookTitle}</strong>{newPassage.bookAuthor && ` / ${newPassage.bookAuthor}`}
+                  {newPassage.sourceUrl && (
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all' }}>
+                      🔗 {newPassage.sourceUrl}
+                    </div>
+                  )}
+                </div>
+              )}
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>발췌할 원문 * (다듬어서 저장)</p>
+              <textarea value={newPassage.excerpt}
+                onChange={e => setNewPassage({...newPassage, excerpt: e.target.value})}
+                style={{ marginBottom: 8, minHeight: 160, resize: 'vertical' }} />
+              <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading || !newPassage.excerpt}
+                style={{ marginBottom: 8, width: '100%' }}>
+                {aiPassageLoading ? '🤖 토론 질문 생성 중…' : '🤖 토론 질문 + 짧은 큐레이터 코멘트 생성'}
+              </button>
+              {newPassage.curatorNote && (
+                <>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>큐레이터 코멘트</p>
+                  <textarea value={newPassage.curatorNote}
+                    onChange={e => setNewPassage({...newPassage, curatorNote: e.target.value, aiGeneratedNote: false})}
+                    style={{ marginBottom: 8, minHeight: 80, resize: 'vertical' }} />
+                </>
+              )}
+            </>
+          )}
+
+          {/* Manual 모드 */}
           {passageMode === 'manual' && (
             <>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -601,46 +853,32 @@ export default function AdminPage() {
                 <option value="">시스템 내 책 연결 (선택사항)</option>
                 {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
               </select>
-              <textarea placeholder="발췌문 *" value={newPassage.passage}
-                onChange={e => setNewPassage({...newPassage, passage: e.target.value})}
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>본문 / 큐레이터 글</p>
+              <textarea placeholder="2문단 큐레이터 글 또는 짧은 발췌 *" value={newPassage.curatorNote}
+                onChange={e => setNewPassage({...newPassage, curatorNote: e.target.value})}
                 style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
-              <input placeholder="출처 표기 (선택)" value={newPassage.source} onChange={e => setNewPassage({...newPassage, source: e.target.value})} style={{ marginBottom: 12 }} />
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>짧은 직접 인용 (선택)</p>
+              <textarea placeholder='큰따옴표로 묶일 짧은 인용. 입력 시 출처 필수.' value={newPassage.excerpt}
+                onChange={e => setNewPassage({...newPassage, excerpt: e.target.value})}
+                style={{ marginBottom: 8, minHeight: 60, fontSize: 13, resize: 'vertical' }} />
+              <input placeholder="출처 표기 (인용이 있으면 필수)" value={newPassage.source} onChange={e => setNewPassage({...newPassage, source: e.target.value})} style={{ marginBottom: 12 }} />
             </>
           )}
 
-          {/* 관련 질문 */}
-          {(passageMode === 'manual' || newPassage.questions.length > 0) && (
-            <>
-              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
-                관련 질문 (최대 5개){passageMode === 'ai' && newPassage.questions.length > 0 ? ' — AI 생성 결과 (삭제 가능)' : ''}
-              </p>
-              {newPassage.questions.map((q, i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
-                  <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
-                </div>
-              ))}
-              {passageMode === 'manual' && newPassage.questions.length < 5 && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input placeholder="질문 추가" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim()) {
-                      setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
-                      setNewPassageQuestion('');
-                    }}} style={{ flex: 1 }} />
-                  <button className="btn-sm btn-outline" onClick={() => {
-                    if (newPassageQuestion.trim()) {
-                      setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
-                      setNewPassageQuestion('');
-                    }
-                  }}>추가</button>
-                </div>
-              )}
-            </>
-          )}
-          {passageMode === 'manual' && newPassage.questions.length === 0 && (
+          {/* 관련 질문 (공통) */}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6, marginTop: 8 }}>
+            관련 질문 (최대 5개){newPassage.aiGeneratedQuestions ? ' — 🤖 AI 생성' : ''}
+          </p>
+          {newPassage.questions.map((q, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+              <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+            </div>
+          ))}
+          {newPassage.questions.length < 5 && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input placeholder="관련 질문 추가 (선택, 최대 5개)" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
+              <input placeholder="질문 추가" value={newPassageQuestion} onChange={e => setNewPassageQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && newPassageQuestion.trim()) {
                   setNewPassage(prev => ({...prev, questions: [...prev.questions, newPassageQuestion.trim()]}));
                   setNewPassageQuestion('');
@@ -667,13 +905,35 @@ export default function AdminPage() {
                   {editingPassageId === p.id ? (
                     /* 수정 폼 */
                     <div style={{ width: '100%' }}>
+                      <select value={editPassage.kind} onChange={e => setEditPassage({...editPassage, kind: e.target.value, publicDomain: e.target.value === 'public_domain'})} style={{ marginBottom: 8 }}>
+                        <option value="curator_intro">✍️ 큐레이터 소개</option>
+                        <option value="public_domain">📜 원문 발췌 (저작권 만료)</option>
+                      </select>
                       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                         <input placeholder="책 제목 *" value={editPassage.bookTitle} onChange={e => setEditPassage({...editPassage, bookTitle: e.target.value})} style={{ flex: 2 }} />
                         <input placeholder="저자" value={editPassage.bookAuthor} onChange={e => setEditPassage({...editPassage, bookAuthor: e.target.value})} style={{ flex: 1 }} />
                       </div>
-                      <textarea placeholder="발췌문 *" value={editPassage.passage} onChange={e => setEditPassage({...editPassage, passage: e.target.value})}
-                        style={{ marginBottom: 8, minHeight: 100, resize: 'vertical' }} />
-                      <input placeholder="출처 (선택)" value={editPassage.source} onChange={e => setEditPassage({...editPassage, source: e.target.value})} style={{ marginBottom: 8 }} />
+                      {editPassage.kind === 'public_domain' ? (
+                        <>
+                          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>원문 발췌 *</p>
+                          <textarea value={editPassage.excerpt} onChange={e => setEditPassage({...editPassage, excerpt: e.target.value})}
+                            style={{ marginBottom: 8, minHeight: 160, resize: 'vertical' }} />
+                          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>큐레이터 코멘트 (선택)</p>
+                          <textarea value={editPassage.curatorNote} onChange={e => setEditPassage({...editPassage, curatorNote: e.target.value})}
+                            style={{ marginBottom: 8, minHeight: 80, resize: 'vertical' }} />
+                        </>
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>큐레이터 코멘트</p>
+                          <textarea value={editPassage.curatorNote} onChange={e => setEditPassage({...editPassage, curatorNote: e.target.value})}
+                            style={{ marginBottom: 8, minHeight: 120, resize: 'vertical' }} />
+                          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>짧은 직접 인용 (선택)</p>
+                          <textarea value={editPassage.excerpt} onChange={e => setEditPassage({...editPassage, excerpt: e.target.value})}
+                            style={{ marginBottom: 8, minHeight: 60, fontSize: 13, resize: 'vertical' }} />
+                        </>
+                      )}
+                      <input placeholder="출처 (선택, 인용 시 필수)" value={editPassage.source} onChange={e => setEditPassage({...editPassage, source: e.target.value})} style={{ marginBottom: 8 }} />
+                      <input placeholder="출처 URL (선택)" value={editPassage.sourceUrl} onChange={e => setEditPassage({...editPassage, sourceUrl: e.target.value})} style={{ marginBottom: 8 }} />
                       {/* 질문 수정 */}
                       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>질문</p>
                       {editPassage.questions.map((q, i) => (
@@ -699,21 +959,26 @@ export default function AdminPage() {
                   ) : (
                     /* 목록 뷰 */
                     <>
-                      <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, background: p.period === 'weekly' ? 'var(--accent2)' : 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>
                           {p.period === 'weekly' ? '주간' : '월간'}
                         </span>
+                        {p.kind === 'public_domain' ? (
+                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>📜 원문</span>
+                        ) : p.kind === 'curator_intro' ? (
+                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>✍️ 소개</span>
+                        ) : null}
                         <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{p.periodKey}</span>
                         <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bookTitle}</span>
                         <button className="btn-sm btn-outline" onClick={() => togglePassageActive(p.id, p.isActive)}
                           style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '' }}>
                           {p.isActive ? '✅ 노출 중' : '노출'}
                         </button>
-                        <button className="btn-sm btn-outline" onClick={() => { setEditingPassageId(p.id); setEditPassage({ bookTitle: p.bookTitle || '', bookAuthor: p.bookAuthor || '', passage: p.passage || '', questions: p.questions || [], source: p.source || '' }); setEditPassageQuestion(''); }} style={{ flexShrink: 0 }}>수정</button>
+                        <button className="btn-sm btn-outline" onClick={() => { setEditingPassageId(p.id); setEditPassage({ bookTitle: p.bookTitle || '', bookAuthor: p.bookAuthor || '', kind: p.kind || 'curator_intro', excerpt: p.excerpt || '', curatorNote: p.curatorNote || '', passage: p.passage || '', questions: p.questions || [], source: p.source || '', sourceType: p.sourceType || 'manual', sourceUrl: p.sourceUrl || '', publicDomain: !!p.publicDomain }); setEditPassageQuestion(''); }} style={{ flexShrink: 0 }}>수정</button>
                         <button className="btn-sm btn-danger" onClick={() => deletePassage(p.id)} style={{ flexShrink: 0 }}>삭제</button>
                       </div>
                       <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>
-                        "{p.passage?.slice(0, 60)}{p.passage?.length > 60 ? '…' : ''}"
+                        {(() => { const t = p.excerpt || p.curatorNote || p.passage || ''; return t ? `"${t.slice(0, 60)}${t.length > 60 ? '…' : ''}"` : ''; })()}
                       </p>
                       {p.questions?.length > 0 && (
                         <p style={{ fontSize: 11, color: 'var(--accent)' }}>💬 질문 {p.questions.length}개</p>

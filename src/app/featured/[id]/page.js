@@ -92,16 +92,66 @@ export default function FeaturedDetailPage({ params }) {
         {passage.period === 'weekly' ? '📅 이 주의 글' : '📆 이 달의 글'} · {passage.periodKey}
       </div>
 
-      {/* 발췌문 */}
+      {/* 발췌문 / 큐레이터 소개 */}
       <div className="card" style={{ padding: 24, marginBottom: 16 }}>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 2, color: 'var(--text)', whiteSpace: 'pre-line', marginBottom: 16 }}>
-          "{passage.passage}"
-        </p>
-        <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-          <p style={{ fontSize: 13, fontWeight: 500 }}>{passage.bookTitle}</p>
-          {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
-          {passage.source && <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>출처: {passage.source}</p>}
-        </div>
+        {passage.kind === 'public_domain' && passage.excerpt ? (
+          <>
+            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 2, color: 'var(--text)', whiteSpace: 'pre-line', marginBottom: 16 }}>
+              "{passage.excerpt}"
+            </p>
+            {passage.curatorNote && (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--muted)', whiteSpace: 'pre-line', marginBottom: 16, paddingLeft: 12, borderLeft: '2px solid var(--line)' }}>
+                {passage.curatorNote}
+              </p>
+            )}
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px' }}>📜 자유 이용</span>
+              <p style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>{passage.bookTitle}</p>
+              {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
+              {passage.sourceUrl && (
+                <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all' }}>
+                  출처: <a href={passage.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>{passage.sourceUrl}</a>
+                </p>
+              )}
+              {passage.source && <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{passage.source}</p>}
+              <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, fontStyle: 'italic' }}>공표 후 보호기간 만료 저작물 — 자유롭게 이용 가능</p>
+            </div>
+          </>
+        ) : passage.kind === 'curator_intro' ? (
+          <>
+            {passage.curatorNote && (
+              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 15, lineHeight: 1.9, color: 'var(--text)', whiteSpace: 'pre-line', marginBottom: 16 }}>
+                {passage.curatorNote}
+              </p>
+            )}
+            {passage.excerpt && (
+              <div style={{ background: 'var(--tag-bg)', borderLeft: '3px solid var(--accent2)', padding: '10px 14px', borderRadius: 6, marginBottom: 16 }}>
+                <p style={{ fontFamily: 'var(--font-serif)', fontSize: 14, lineHeight: 1.8, color: 'var(--text)', whiteSpace: 'pre-line' }}>
+                  "{passage.excerpt}"
+                </p>
+                {passage.source && <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>— {passage.source}</p>}
+              </div>
+            )}
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px' }}>✍️ 큐레이터 소개</span>
+              {passage.aiGenerated?.curatorNote && <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 6 }}>🤖 AI 큐레이션</span>}
+              <p style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>{passage.bookTitle}</p>
+              {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
+              <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, fontStyle: 'italic' }}>이 글은 책에 대한 큐레이터의 소개이며, 책의 원문 발췌가 아닙니다.</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 2, color: 'var(--text)', whiteSpace: 'pre-line', marginBottom: 16 }}>
+              "{passage.passage}"
+            </p>
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+              <p style={{ fontSize: 13, fontWeight: 500 }}>{passage.bookTitle}</p>
+              {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
+              {passage.source && <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>출처: {passage.source}</p>}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 토론 질문 */}
