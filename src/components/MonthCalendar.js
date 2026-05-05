@@ -82,6 +82,8 @@ export default function MonthCalendar({ meetings = [], value = null, onChange })
           const isToday = isSameDay(d, today);
           const isSelected = value && isSameDay(d, value);
           const dow = d.getDay();
+          const bg = isSelected ? 'var(--accent)' : hasEvent ? 'var(--accent2)' : 'transparent';
+          const color = (isSelected || hasEvent) ? '#fff' : (dow === 0 ? '#c0392b' : (dow === 6 ? '#2a6fb3' : 'var(--text)'));
           return (
             <button
               key={key}
@@ -92,23 +94,16 @@ export default function MonthCalendar({ meetings = [], value = null, onChange })
                 padding: 0,
                 border: isToday ? '1.5px solid var(--accent2)' : '1px solid transparent',
                 borderRadius: 6,
-                background: isSelected ? 'var(--accent)' : 'transparent',
-                color: isSelected ? '#fff' : (dow === 0 ? '#c0392b' : (dow === 6 ? '#2a6fb3' : 'var(--text)')),
+                background: bg,
+                color,
                 fontSize: 13,
+                fontWeight: hasEvent || isSelected ? 600 : 400,
                 cursor: 'pointer',
-                position: 'relative',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 fontFamily:'var(--font-sans)',
               }}
             >
               {d.getDate()}
-              {hasEvent && (
-                <span style={{
-                  position:'absolute', bottom: 4, left:'50%', transform:'translateX(-50%)',
-                  width: 5, height: 5, borderRadius:'50%',
-                  background: isSelected ? '#fff' : 'var(--accent2)',
-                }} />
-              )}
             </button>
           );
         })}
