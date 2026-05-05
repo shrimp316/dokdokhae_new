@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import AuthModal from '@/components/AuthModal';
 import FCMInit from '@/components/FCMInit';
+import VersionGate from '@/components/VersionGate';
 
 const notoSerif = Noto_Serif_KR({ subsets: ['latin'], weight: ['400', '600', '700'], variable: '--font-serif' });
 const notoSans = Noto_Sans_KR({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-sans' });
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
           </div>
           <AuthModal />
           <FCMInit />
+          <VersionGate />
         </AuthProvider>
       </body>
     </html>
