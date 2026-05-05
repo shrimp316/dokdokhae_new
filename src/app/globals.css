@@ -208,6 +208,11 @@ textarea { resize: vertical; min-height: 80px; }
 }
 .review-content { font-size: 14px; line-height: 1.65; }
 .review-content p { margin-bottom: 8px; }
+.review-content p:last-child { margin-bottom: 0; }
+.post-content p { margin-bottom: 0.6em; }
+.post-content p:last-child { margin-bottom: 0; }
+.post-content p:empty { min-height: 1em; }
+.review-content p:empty { min-height: 1em; }
 .star-filled { color: #f0a500; }
 .star-empty { color: var(--line); }
 

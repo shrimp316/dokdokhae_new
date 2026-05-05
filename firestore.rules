@@ -3,6 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // 컬렉션 그룹 쿼리 허용 (마이페이지 내 댓글 모아보기용)
+    match /{path=**}/comments/{cid} {
+      allow read: if true;
+    }
+
     function isSignedIn() {
       return request.auth != null;
     }

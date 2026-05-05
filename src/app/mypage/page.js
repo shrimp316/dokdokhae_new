@@ -29,18 +29,28 @@ export default function MyPage() {
     try {
       const commentSnap = await getDocs(query(collectionGroup(db, 'comments'), where('uid', '==', user.uid), orderBy('createdAt', 'desc')));
       const comments = await Promise.all(commentSnap.docs.map(async d => {
-        const postId = d.ref.parent.parent.id;
+        const parentRef = d.ref.parent.parent; // e.g. board/{id}, reviews/{id}, featuredPassages/{id}
+        const parentCol = parentRef.parent.id; // 'board' | 'reviews' | 'featuredPassages'
+        const postId = parentRef.id;
         let postTitle = '';
         try {
-          const postSnap = await getDoc(doc(db, 'board', postId));
-          if (postSnap.exists()) postTitle = postSnap.data().title;
-        } catch {}
-        return { id: d.id, postId, postTitle, ...d.data() };
+          const postSnap = await getDoc(parentRef);
+          if (postSnap.exists()) postTitle = postSnap.data().title || '';
+        } catch (e) { console.error('내 댓글 부모글 로딩 실패', e); }
+        return { id: d.id, postId, postTitle, parentCol, ...d.data() };
       }));
       setMyComments(comments);
-    } catch {}
+    } catch (e) {
+      console.error('내 댓글 로딩 실패', e);
+    }
 
     setLoading(false);
+  }
+
+  function commentLink(c) {
+    if (c.parentCol === 'reviews') return `/reviews#${c.postId}`;
+    if (c.parentCol === 'featuredPassages') return `/featured/${c.postId}`;
+    return `/board/${c.postId}`;
   }
 
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
@@ -101,7 +111,7 @@ export default function MyPage() {
           <p className="empty-msg">작성한 댓글이 없어요.</p>
         ) : (
           myComments.map(c => (
-            <Link key={c.id} href={`/board/${c.postId}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <Link key={c.id} href={commentLink(c)} style={{ textDecoration: 'none', display: 'block' }}>
               <div className="post-card">
                 <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 4 }}>
                   📝 {c.postTitle || '게시글'}

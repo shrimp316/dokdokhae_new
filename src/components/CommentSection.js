@@ -62,12 +62,14 @@ export default function CommentSection({ collectionName, postId, isAdmin = false
         />
       ))}
       {user ? (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-          <input
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'flex-start' }}>
+          <textarea
+            rows={2}
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
             onClick={e => e.stopPropagation()}
             placeholder="댓글을 남겨주세요"
+            style={{ minHeight: 44, resize: 'vertical' }}
           />
           <button type="button" className="btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); handleAddTop(); }}>등록</button>
         </div>
@@ -93,8 +95,8 @@ function CommentItem({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{comment.nickname}</div>
           {editing ? (
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <input value={editText} onChange={e => setEditText(e.target.value)} />
+            <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'flex-start' }}>
+              <textarea rows={2} value={editText} onChange={e => setEditText(e.target.value)} style={{ minHeight: 44, resize: 'vertical' }} />
               <button type="button" className="btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); onSaveEdit(comment.id); }}>저장</button>
               <button type="button" className="btn-sm" onClick={(e) => { e.stopPropagation(); setEditCommentId(null); }}>취소</button>
             </div>
@@ -125,8 +127,8 @@ function CommentItem({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{r.nickname}</div>
                 {rEditing ? (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                    <input value={editText} onChange={e => setEditText(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'flex-start' }}>
+                    <textarea rows={2} value={editText} onChange={e => setEditText(e.target.value)} style={{ minHeight: 44, resize: 'vertical' }} />
                     <button type="button" className="btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); onSaveEdit(r.id); }}>저장</button>
                     <button type="button" className="btn-sm" onClick={(e) => { e.stopPropagation(); setEditCommentId(null); }}>취소</button>
                   </div>
@@ -148,8 +150,8 @@ function CommentItem({
       })}
 
       {replyTarget === comment.id && user && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8, marginLeft: 16 }}>
-          <input value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="답글을 남겨주세요" onClick={e => e.stopPropagation()} />
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, marginLeft: 16, alignItems: 'flex-start' }}>
+          <textarea rows={2} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="답글을 남겨주세요" onClick={e => e.stopPropagation()} style={{ minHeight: 44, resize: 'vertical' }} />
           <button type="button" className="btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); onAddReply(comment.id); }}>등록</button>
           <button type="button" className="btn-sm" onClick={(e) => { e.stopPropagation(); setReplyTarget(null); }}>취소</button>
         </div>
