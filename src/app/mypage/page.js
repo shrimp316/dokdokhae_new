@@ -5,6 +5,9 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { stripHtml } from '@/lib/searchUtils';
+
+const COMMENT_PREVIEW_LEN = 60;
 
 export default function MyPage() {
   const { user, profile } = useAuth();
@@ -117,7 +120,9 @@ export default function MyPage() {
                   📝 {c.postTitle || '게시글'}
                   {c.parentId && <span style={{ marginLeft: 6, color: 'var(--muted)' }}>↩ 대댓글</span>}
                 </div>
-                <div style={{ fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>{c.content}</div>
+                <div style={{ fontSize: 14, color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                  {stripHtml(c.content).slice(0, COMMENT_PREVIEW_LEN)}{stripHtml(c.content).length > COMMENT_PREVIEW_LEN ? '…' : ''}
+                </div>
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(c.createdAt)}</div>
               </div>
             </Link>

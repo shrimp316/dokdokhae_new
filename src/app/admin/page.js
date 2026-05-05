@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { stripHtml } from '@/lib/searchUtils';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -817,7 +818,7 @@ export default function AdminPage() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 500 }}>{n.pinned ? '📌 ' : ''}{n.title}</div>
                       <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {(n.content||'').replace(/<[^>]+>/g,'').slice(0,40) + '…'}
+                        {stripHtml(n.content).slice(0,40) + '…'}
                       </div>
                     </div>
                     {!n.pinned && <button className="btn-sm btn-outline" onClick={() => setPinned(n.id)}>고정</button>}
