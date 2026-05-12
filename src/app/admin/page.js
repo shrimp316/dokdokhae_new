@@ -1080,15 +1080,17 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <div style={listItemStyle}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500 }}>{n.pinned ? '📌 ' : ''}{n.title}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.pinned ? '📌 ' : ''}{n.title}</div>
                       <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {stripHtml(n.content).slice(0,40) + '…'}
                       </div>
                     </div>
-                    {!n.pinned && <button className="btn-sm btn-outline" onClick={() => setPinned(n.id)}>고정</button>}
-                    <button className="btn-sm btn-outline" onClick={() => { setEditingNoticeId(n.id); setEditNotice({ title: n.title, content: n.content, pinned: n.pinned }); }}>수정</button>
-                    <button className="btn-sm btn-danger" onClick={() => deleteNotice(n.id)}>삭제</button>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      {!n.pinned && <button className="btn-sm btn-outline" onClick={() => setPinned(n.id)} style={{ flexShrink: 0 }}>고정</button>}
+                      <button className="btn-sm btn-outline" onClick={() => { setEditingNoticeId(n.id); setEditNotice({ title: n.title, content: n.content, pinned: n.pinned }); }} style={{ flexShrink: 0 }}>수정</button>
+                      <button className="btn-sm btn-danger" onClick={() => deleteNotice(n.id)} style={{ flexShrink: 0 }}>삭제</button>
+                    </div>
                   </div>
                 )}
               </div>
