@@ -45,10 +45,10 @@ export default function ReviewCard({
           <span style={{ fontSize:13, fontWeight:600, color:'var(--accent)', whiteSpace:'nowrap' }}>{review.nickname || '익명'}</span>
           {stars(review.rating)}
           {showBookTitle && bookTitle && (
-            <span style={{ fontSize:12, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>📖 {bookTitle}</span>
+            <span className="rc-meta rc-meta-book-title">📖 {bookTitle}</span>
           )}
           {!expanded && previewText && (
-            <span style={{ fontSize:12, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            <span className={`rc-meta${showBookTitle ? ' rc-meta-preview-hide-mobile' : ''}`}>
               {previewText}
             </span>
           )}

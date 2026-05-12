@@ -206,6 +206,17 @@ textarea { resize: vertical; min-height: 80px; }
   background: var(--card); border-radius: var(--radius);
   padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
 }
+.rc-meta {
+  font-size: 12px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .rc-meta-preview-hide-mobile { display: none; }
+  .rc-meta-book-title {
+    white-space: normal; overflow: visible; text-overflow: clip;
+    word-break: break-word;
+  }
+}
 .review-content { font-size: 14px; line-height: 1.65; }
 .review-content p { margin-bottom: 8px; }
 .review-content p:last-child { margin-bottom: 0; }
