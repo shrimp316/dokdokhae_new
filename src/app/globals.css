@@ -60,6 +60,7 @@ html, body {
   --dd-menu-5: #a8773a;  /* 내 감상평 */
   --dd-menu-6: #6b8aa8;  /* 자유게시판 */
   --dd-menu-7: #2c3a4a;  /* 공지사항 */
+  --dd-menu-8: #3a3a3a;  /* 관리자 */
 
   /* Brass plaque + wood */
   --dd-brass: linear-gradient(180deg, #d8b27a 0%, #c08648 38%, #a76c2c 72%, #8a5418 100%);

@@ -13,6 +13,7 @@ const NAV = [
   { href: '/reviews',  label: '내 감상평',  color: 'var(--dd-menu-5)' },
   { href: '/board',    label: '자유게시판', color: 'var(--dd-menu-6)' },
   { href: '/notice',   label: '공지사항',   color: 'var(--dd-menu-7)' },
+  { href: '/admin',    label: '관리자',     color: 'var(--dd-menu-8)' },
 ];
 
 function isActiveFor(pathname, href) {
