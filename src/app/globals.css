@@ -135,6 +135,29 @@ h1, h2, h3 {
 }
 
 /* ─────────────────────────────────────────────────────────── */
+/* ── Layout grids (home/detail/meetings) — from index.html   */
+/* ─────────────────────────────────────────────────────────── */
+.dd-home-hero   { grid-template-columns: 160px minmax(0, 1fr) 220px !important; }
+.dd-home-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+.dd-detail-hero { grid-template-columns: 180px minmax(0, 1fr) !important; }
+.dd-meet-grid   { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important; }
+
+/* Responsive collapse at tablet/mobile (matches reference index.html) */
+@media (max-width: 980px) {
+  .dd-page         { padding: 24px 18px 56px !important; gap: 32px !important; }
+  .dd-header       { padding: 14px 18px 12px 56px !important; }
+  .dd-home-hero    { grid-template-columns: 1fr !important; gap: 22px !important; }
+  .dd-home-bottom  { grid-template-columns: 1fr !important; gap: 28px !important; }
+  .dd-detail-hero  { grid-template-columns: 120px 1fr !important; gap: 20px !important; }
+  .dd-meet-grid    { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .dd-books-head   { flex-direction: column; align-items: flex-start !important; gap: 14px; }
+  .dd-books-head input { min-width: 0 !important; width: 100% !important; }
+  .dd-shelf-mag    { grid-template-columns: repeat(2, 1fr) !important; gap: 28px 18px !important; }
+  .dd-shelf-night  { grid-template-columns: repeat(2, 1fr) !important; gap: 28px 18px !important; }
+  .dd-h1           { font-size: clamp(32px, 9vw, 48px) !important; }
+}
+
+/* ─────────────────────────────────────────────────────────── */
 /* ── App layout (kept identifiers but updated geometry)      ── */
 /* ─────────────────────────────────────────────────────────── */
 .app-layout {
