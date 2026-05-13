@@ -1,0 +1,209 @@
+{
+  "designSystem": {
+    "name": "App UI Styleguide",
+    "platforms": ["Web", "iOS", "Android"],
+    "theme": "light",
+    "tokens": {
+      "colors": {
+        "primary": {
+          "value": "#DF5B30",
+          "description": "메인 브랜드 컬러 (오렌지)"
+        },
+        "surface": {
+          "value": "#FFFFFF",
+          "description": "기본 배경 및 컴포넌트 표면 컬러"
+        },
+        "border": {
+          "value": "#DF2EC1",
+          "description": "테두리 및 디바이더 컬러 (이미지 표기 기준)"
+        },
+        "focusRing": {
+          "value": "#FFFFFF",
+          "stroke": "#DF5B30",
+          "description": "포커스 시 보여지는 링 컬러 (주황색 테두리 포함)"
+        },
+        "text": {
+          "primary": "#000000",
+          "secondary": "#666666",
+          "inverse": "#FFFFFF"
+        },
+        "state": {
+          "disabled": "#A0A0A0",
+          "hoverGlow": "rgba(223, 91, 48, 0.4)"
+        }
+      },
+      "typography": {
+        "fontFamily": "System, sans-serif",
+        "scale": {
+          "h1": { "size": "30px", "weight": "bold" },
+          "h2": { "size": "20px", "weight": "medium" },
+          "h3": { "size": "15px", "weight": "medium" },
+          "body1": { "size": "10px", "weight": "regular" },
+          "body2": { "size": "8px", "weight": "regular" },
+          "caption1": { "size": "6px", "weight": "regular" },
+          "caption2": { "size": "4px", "weight": "regular" },
+          "micro1": { "size": "3px", "weight": "regular" },
+          "micro2": { "size": "2px", "weight": "regular" },
+          "micro3": { "size": "1px", "weight": "regular" }
+        }
+      },
+      "spacing": {
+        "unit": "px",
+        "scale": [0, 2, 4, 6, 10, 12, 14, 16, 18, 20]
+      },
+      "radius": {
+        "sm": "4px",
+        "md": "8px",
+        "lg": "16px",
+        "pill": "999px",
+        "card": "12px"
+      },
+      "elevation": {
+        "level1": "0px 4px 10px rgba(0, 0, 0, 0.05)",
+        "level2": "0px 8px 20px rgba(0, 0, 0, 0.08)",
+        "inner": "inset 0px 2px 4px rgba(0, 0, 0, 0.06)"
+      }
+    },
+    "components": {
+      "buttons": {
+        "base": {
+          "padding": "10px 20px",
+          "borderRadius": "{tokens.radius.md}",
+          "textAlign": "center",
+          "fontWeight": "medium"
+        },
+        "variants": {
+          "default": {
+            "backgroundColor": "{tokens.colors.primary.value}",
+            "color": "{tokens.colors.text.inverse}",
+            "boxShadow": "none"
+          },
+          "hover": {
+            "background": "linear-gradient(180deg, #ED7148 0%, #DF5B30 100%)",
+            "color": "{tokens.colors.text.inverse}",
+            "boxShadow": "0px 6px 15px {tokens.colors.state.hoverGlow}"
+          },
+          "disabled": {
+            "backgroundColor": "{tokens.colors.state.disabled}",
+            "color": "{tokens.colors.text.inverse}",
+            "boxShadow": "none"
+          }
+        }
+      },
+      "inputs": {
+        "base": {
+          "height": "36px",
+          "borderRadius": "{tokens.radius.md}",
+          "padding": "0 12px",
+          "fontSize": "{tokens.typography.scale.body1.size}"
+        },
+        "variants": {
+          "outlined": {
+            "border": "1px solid {tokens.colors.border.value}",
+            "backgroundColor": "transparent"
+          },
+          "filled": {
+            "backgroundColor": "#F0F0F0",
+            "border": "none",
+            "boxShadow": "{tokens.elevation.inner}"
+          },
+          "elevated": {
+            "backgroundColor": "{tokens.colors.surface.value}",
+            "border": "none",
+            "boxShadow": "{tokens.elevation.level1}",
+            "icon": "search",
+            "iconPosition": "right"
+          }
+        }
+      },
+      "chips": {
+        "base": {
+          "padding": "6px 12px",
+          "borderRadius": "{tokens.radius.pill}",
+          "fontSize": "{tokens.typography.scale.body2.size}",
+          "display": "inline-flex",
+          "alignItems": "center"
+        },
+        "variants": {
+          "primary": {
+            "backgroundColor": "{tokens.colors.primary.value}",
+            "color": "{tokens.colors.text.inverse}"
+          },
+          "default": {
+            "backgroundColor": "transparent",
+            "border": "1px solid #D9D9D9",
+            "color": "{tokens.colors.text.primary}"
+          }
+        }
+      },
+      "tabs": {
+        "base": {
+          "display": "flex",
+          "gap": "{tokens.spacing.scale[4]}",
+          "fontSize": "{tokens.typography.scale.h3.size}"
+        },
+        "states": {
+          "active": {
+            "color": "{tokens.colors.text.primary}",
+            "fontWeight": "bold",
+            "borderBottom": "2px solid {tokens.colors.text.primary}"
+          },
+          "inactive": {
+            "color": "{tokens.colors.text.secondary}",
+            "fontWeight": "regular",
+            "borderBottom": "none"
+          }
+        }
+      },
+      "alerts": {
+        "base": {
+          "padding": "12px 16px",
+          "borderRadius": "{tokens.radius.md}",
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "8px",
+          "boxShadow": "{tokens.elevation.level1}"
+        },
+        "variants": {
+          "default": {
+            "backgroundColor": "{tokens.colors.surface.value}",
+            "iconColor": "{tokens.colors.text.secondary}"
+          },
+          "warning": {
+            "backgroundColor": "#FDF2EE",
+            "iconColor": "{tokens.colors.primary.value}",
+            "borderLeft": "4px solid {tokens.colors.primary.value}"
+          },
+          "info": {
+            "backgroundColor": "{tokens.colors.surface.value}",
+            "iconColor": "{tokens.colors.text.primary}"
+          }
+        }
+      },
+      "cards": {
+        "base": {
+          "backgroundColor": "{tokens.colors.surface.value}",
+          "borderRadius": "{tokens.radius.card}",
+          "boxShadow": "{tokens.elevation.level2}",
+          "padding": "12px",
+          "display": "flex",
+          "flexDirection": "column",
+          "gap": "8px"
+        },
+        "elements": {
+          "imagePlaceholder": {
+            "height": "60%",
+            "backgroundColor": "#D9D9D9",
+            "borderRadius": "{tokens.radius.sm}"
+          },
+          "textPlaceholder": {
+            "height": "8px",
+            "backgroundColor": "#E0E0E0",
+            "borderRadius": "{tokens.radius.pill}",
+            "marginBottom": "4px"
+          }
+        }
+      }
+    }
+  }
+}
