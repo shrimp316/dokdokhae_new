@@ -1,58 +1,83 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
-import SearchBar from '@/components/SearchBar';
-import { matchAny } from '@/lib/searchUtils';
+import BookShelfStudy from '@/components/BookShelfStudy';
 
 export default function BooksPage() {
   const [books, setBooks] = useState([]);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const router = useRouter();
+  const [q, setQ] = useState('');
 
   useEffect(() => {
-    getDocs(query(collection(db, 'books'), orderBy('addedAt', 'desc')))
-      .then(snap => setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'books'), orderBy('addedAt', 'desc')));
+        if (cancelled) return;
+        setBooks(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      } catch {
+        // empty list
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  const filtered = books.filter(b => matchAny([b.title, b.author, b.genre], search));
+  const filtered = useMemo(() => {
+    if (!q.trim()) return books;
+    const needle = q.trim().toLowerCase();
+    return books.filter((b) => {
+      const fields = [b.title, b.author, b.genre].map((s) => (s || '').toLowerCase());
+      return fields.some((s) => s.includes(needle));
+    });
+  }, [books, q]);
 
   return (
-    <div>
-      <div className="section-title">역대 도서 목록</div>
-      <SearchBar
-        value={searchInput}
-        onChange={setSearchInput}
-        onSubmit={v => setSearch(v)}
-        placeholder="책 제목, 저자, 장르로 검색…"
-      />
-      {!filtered.length ? (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <div
+        className="dd-books-head"
+        style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          gap: 18, flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 11, color: 'var(--dd-text-muted)',
+              letterSpacing: '0.3em', textTransform: 'uppercase',
+              marginBottom: 8,
+            }}
+          >
+            The Library
+          </div>
+          <h1
+            style={{
+              fontFamily: 'var(--dd-serif)', fontSize: 'var(--dd-h1)',
+              fontWeight: 500, margin: 0, color: 'var(--dd-text)',
+              letterSpacing: '-0.03em', lineHeight: 1,
+            }}
+          >
+            역대 <em style={{ fontStyle: 'italic', color: 'var(--dd-accent)' }}>도서 목록</em>
+          </h1>
+        </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="제목 · 저자 · 장르"
+          style={{
+            padding: '10px 14px', minWidth: 280,
+            background: 'transparent',
+            border: 0, borderBottom: '1px solid var(--dd-text)',
+            fontSize: 13, color: 'var(--dd-text)', outline: 'none',
+            fontFamily: 'var(--dd-sans)', borderRadius: 0,
+          }}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
         <p className="empty-msg">등록된 책이 없어요.</p>
       ) : (
-        <div className="books-grid">
-          {filtered.map(b => (
-            <div
-              key={b.id}
-              onClick={() => router.push(`/books/${b.id}`)}
-              style={{ background: 'var(--card)', borderRadius: 'var(--radius)', overflow: 'hidden', cursor: 'pointer', boxShadow: 'var(--shadow)', transition: 'transform 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >
-              {b.cover ? (
-                <img src={b.cover} alt={b.title} className="book-card-cover" />
-              ) : (
-                <div className="book-card-cover no-cover">📚</div>
-              )}
-              <div style={{ padding: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4, marginBottom: 3 }}>{b.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{b.author}</div>
-                {b.genre && <div style={{ marginTop: 4 }}><span className="tag">{b.genre}</span></div>}
-              </div>
-            </div>
-          ))}
-        </div>
+        <BookShelfStudy books={filtered} perRow={6} />
       )}
     </div>
   );

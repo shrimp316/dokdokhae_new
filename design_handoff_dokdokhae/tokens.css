@@ -1,0 +1,73 @@
+/* 독독해 — Design tokens (Study direction)
+ * Drop this into your globals.css and replace existing color variables.
+ * The default mode is sepia; switch via [data-mode] on <html>. */
+
+:root,
+[data-mode="sepia"] {
+  --dd-bg:           #e6d8b8;
+  --dd-surface:      #ede0c2;
+  --dd-text:         #2c2218;
+  --dd-text-muted:   #7c6a56;
+  --dd-accent:       #7a3014;
+  --dd-accent-soft:  #d4b890;
+  --dd-border:       rgba(44, 34, 24, 0.22);
+  --dd-shelf:        linear-gradient(180deg, #6b4a2e 0%, #3e2a18 100%);
+}
+
+[data-mode="light"] {
+  --dd-bg:           #ece1c8;
+  --dd-surface:      #f3e9d2;
+  --dd-text:         #28201a;
+  --dd-text-muted:   #7a6856;
+  --dd-accent:       #8a3a1f;
+  --dd-accent-soft:  #d8c0a0;
+  --dd-border:       rgba(40, 32, 26, 0.18);
+  --dd-shelf:        linear-gradient(180deg, #6b4a2e 0%, #4a3220 100%);
+}
+
+[data-mode="dark"] {
+  --dd-bg:           #1c1813;
+  --dd-surface:      #241e17;
+  --dd-text:         #e8dcc6;
+  --dd-text-muted:   #8c7e68;
+  --dd-accent:       #c87a4a;
+  --dd-accent-soft:  #3a2c1e;
+  --dd-border:       rgba(232, 220, 198, 0.10);
+  --dd-shelf:        linear-gradient(180deg, #2a2018 0%, #15100b 100%);
+}
+
+:root {
+  /* Typography */
+  --dd-serif:  "Noto Serif KR", "EB Garamond", Georgia, serif;
+  --dd-sans:   Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --dd-body:   14px;
+  --dd-h1:     clamp(36px, 7vw, 64px);
+  --dd-h2:     30px;
+
+  /* Sidebar menu colors (book spine palette, 7 items) */
+  --dd-menu-1: #8a3a1f;  /* 홈 */
+  --dd-menu-2: #3a4a3b;  /* 도서 목록 */
+  --dd-menu-3: #6a4a3a;  /* 이 주의 글 */
+  --dd-menu-4: #7a5a3a;  /* 모임 일정 */
+  --dd-menu-5: #a8773a;  /* 내 감상평 */
+  --dd-menu-6: #6b8aa8;  /* 자유게시판 */
+  --dd-menu-7: #2c3a4a;  /* 공지사항 */
+
+  /* Brass plaque + wood */
+  --dd-brass:  linear-gradient(180deg, #d8b27a 0%, #c08648 38%, #a76c2c 72%, #8a5418 100%);
+  --dd-wood-board: linear-gradient(180deg, #7a5232 0%, #5a3a20 50%, #3a2310 100%);
+}
+
+/* Apply globally if you want a quick win without touching components */
+body {
+  background: var(--dd-bg);
+  color: var(--dd-text);
+  font-family: var(--dd-sans);
+  font-size: var(--dd-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--dd-serif);
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
