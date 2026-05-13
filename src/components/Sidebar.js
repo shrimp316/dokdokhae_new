@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/lib/ThemeContext';
+import ModeToggle from '@/components/ModeToggle';
 
 // Maps to existing routes in this codebase.
 const NAV = [
@@ -102,6 +103,9 @@ export default function Sidebar() {
         })}
 
         <div style={{ flex: 1 }} />
+
+        {/* Display controls (mode + font size) */}
+        <ModeToggle />
 
         {/* User block */}
         <div
