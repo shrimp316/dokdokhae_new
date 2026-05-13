@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { bookColors } from '@/lib/bookColors';
-import { extractCoverColors, getCachedCoverColors } from '@/lib/coverColor';
+import { extractCoverColors, getCachedCoverColors, textOn } from '@/lib/coverColor';
 
 const WIDTHS = [44, 40, 48, 42, 46, 38];
 const HEIGHTS = [228, 218, 238, 222, 212, 232];
@@ -70,6 +70,7 @@ export default function BookShelfStudy({ books = [], perRow = 6 }) {
             <div className="dd-shelf-books">
               {row.map((b, i) => {
                 const palette = (b.cover && extracted[b.cover]) || bookColors(b);
+                const text = textOn(palette.color);
                 const h = HEIGHTS[(r * perRow + i) % HEIGHTS.length];
                 const w = WIDTHS[(r * perRow + i) % WIDTHS.length];
                 const year = b.year ?? '';
@@ -83,6 +84,9 @@ export default function BookShelfStudy({ books = [], perRow = 6 }) {
                     style={{
                       width: w, height: h,
                       background: `linear-gradient(90deg, ${palette.spine} 0%, ${palette.color} 18%, ${palette.color} 82%, ${palette.spine} 100%)`,
+                      '--dd-spine-text': text.strong,
+                      '--dd-spine-text-muted': text.muted,
+                      '--dd-spine-text-shadow': text.shadow,
                     }}
                   >
                     <div className="dd-spine-title">{b.title}</div>

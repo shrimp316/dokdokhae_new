@@ -587,7 +587,7 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 .dd-spine-title {
   writing-mode: vertical-lr;
   white-space: nowrap;
-  color: rgba(255,255,255,.96);
+  color: var(--dd-spine-text, rgba(255,255,255,.96));
   font-family: var(--dd-serif);
   font-size: 10.5px;
   padding: 14px 0 8px;
@@ -595,7 +595,7 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
   font-weight: 500;
   line-height: 1.2;
   flex: 1; min-height: 0; overflow: hidden;
-  text-shadow: 0 1px 1px rgba(0,0,0,.18);
+  text-shadow: var(--dd-spine-text-shadow, 0 1px 1px rgba(0,0,0,.18));
 }
 .dd-spine-year {
   width: 100%;
@@ -604,7 +604,7 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
   font-size: 8.5px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
-  color: rgba(255,255,255,.58);
+  color: var(--dd-spine-text-muted, rgba(255,255,255,.58));
   text-align: center;
   border-top: 1px solid rgba(0,0,0,.22);
 }

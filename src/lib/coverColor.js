@@ -91,6 +91,36 @@ function paletteFromHex(hex) {
   };
 }
 
+// WCAG relative luminance. Returns text colors that read on top of `hex`.
+// Used to flip spine text between near-white and near-black so pale covers
+// (베이지/노랑/파스텔) don't lose their title.
+export function textOn(hex) {
+  const light = {
+    strong: 'rgba(255,255,255,.96)',
+    muted: 'rgba(255,255,255,.58)',
+    shadow: '0 1px 1px rgba(0,0,0,.22)',
+  };
+  if (!hex || hex[0] !== '#' || hex.length !== 7) return light;
+  const n = parseInt(hex.slice(1), 16);
+  if (Number.isNaN(n)) return light;
+  const toLin = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const r = toLin((n >> 16) & 0xff);
+  const g = toLin((n >> 8) & 0xff);
+  const b = toLin(n & 0xff);
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (L > 0.5) {
+    return {
+      strong: 'rgba(20,15,10,.88)',
+      muted: 'rgba(20,15,10,.55)',
+      shadow: '0 1px 1px rgba(255,255,255,.35)',
+    };
+  }
+  return light;
+}
+
 function proxied(url) {
   return `/api/cover-proxy?url=${encodeURIComponent(url)}`;
 }
