@@ -1,8 +1,9 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { bookColors } from '@/lib/bookColors';
+import { extractCoverColors, getCachedCoverColors } from '@/lib/coverColor';
 
-// Width / height rotation for spines so the shelf doesn't look uniform.
 const WIDTHS = [44, 40, 48, 42, 46, 38];
 const HEIGHTS = [228, 218, 238, 222, 212, 232];
 
@@ -16,8 +17,41 @@ function PlaqueCorner({ pos }) {
   return <span className="dd-plaque-pin" style={map[pos]} aria-hidden="true" />;
 }
 
+function useExtractedColors(books) {
+  const [map, setMap] = useState(() => {
+    const seed = {};
+    for (const b of books) {
+      if (b?.cover) {
+        const cached = getCachedCoverColors(b.cover);
+        if (cached) seed[b.cover] = cached;
+      }
+    }
+    return seed;
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const urls = books
+      .map((b) => b?.cover)
+      .filter((u) => u && !map[u]);
+    if (urls.length === 0) return;
+    const unique = Array.from(new Set(urls));
+    (async () => {
+      for (const url of unique) {
+        const palette = await extractCoverColors(url);
+        if (cancelled || !palette) continue;
+        setMap((prev) => (prev[url] ? prev : { ...prev, [url]: palette }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [books, map]);
+
+  return map;
+}
+
 export default function BookShelfStudy({ books = [], perRow = 6 }) {
   const router = useRouter();
+  const extracted = useExtractedColors(books);
   if (!books.length) return null;
 
   const rows = [];
@@ -35,7 +69,7 @@ export default function BookShelfStudy({ books = [], perRow = 6 }) {
           <div key={r} className="dd-shelf-row">
             <div className="dd-shelf-books">
               {row.map((b, i) => {
-                const palette = bookColors(b);
+                const palette = (b.cover && extracted[b.cover]) || bookColors(b);
                 const h = HEIGHTS[(r * perRow + i) % HEIGHTS.length];
                 const w = WIDTHS[(r * perRow + i) % WIDTHS.length];
                 const year = b.year ?? '';
