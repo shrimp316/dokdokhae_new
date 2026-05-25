@@ -102,6 +102,37 @@ export default function Sidebar() {
           );
         })}
 
+        {/* 제휴사이트 */}
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm('시화 사이트로 이동할까요?\n새 탭에서 열립니다.')) {
+              window.open('https://sihwa.vercel.app', '_blank', 'noopener,noreferrer');
+            }
+          }}
+          style={{
+            position: 'relative', height: 38,
+            marginLeft: 6,
+            background: 'var(--dd-menu-3)',
+            borderTopLeftRadius: 3, borderBottomLeftRadius: 3,
+            boxShadow: 'inset 2px 0 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.2)',
+            transition: 'margin .14s, box-shadow .14s',
+            display: 'flex', alignItems: 'center', padding: '0 14px',
+            color: 'rgba(255,255,255,.95)', fontSize: 13, fontWeight: 500,
+            fontFamily: 'var(--dd-serif)', letterSpacing: '0.04em',
+            border: 0, cursor: 'pointer', textAlign: 'left', width: '100%',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.marginLeft = '0px'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.marginLeft = '6px'; }}
+        >
+          <span
+            style={{ width: 1, height: 18, background: 'rgba(255,255,255,.28)', marginRight: 10 }}
+            aria-hidden="true"
+          />
+          제휴사이트 – 시화
+          <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}>↗</span>
+        </button>
+
         <div style={{ flex: 1 }} />
 
         {/* Display controls (mode + font size) */}
