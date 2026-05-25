@@ -151,11 +151,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       ref={containerRef}
       style={{ position: 'relative', minHeight }}
       onCompositionStart={() => { isComposing.current = true; }}
-      onCompositionEnd={() => {
-        isComposing.current = false;
-        const quill = getQuill();
-        if (quill && onChange) onChange(quill.root.innerHTML);
-      }}
+      onCompositionEnd={() => { isComposing.current = false; }}
     >
       <ReactQuill
         ref={reactQuillRef}
