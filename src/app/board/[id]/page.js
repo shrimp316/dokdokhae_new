@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -24,11 +24,14 @@ export default function BoardPostPage({ params }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [editPrefix, setEditPrefix] = useState('');
+  const [prefixes, setPrefixes] = useState([]);
 
   const { liked, likeCount, toggleLike } = useLikes('board', id, user);
 
   useEffect(() => {
     loadPost();
+    loadPrefixes();
   }, [id]);
 
   async function loadPost() {
@@ -38,6 +41,14 @@ export default function BoardPostPage({ params }) {
     setPost(data);
     setEditTitle(data.title);
     setEditContent(data.content);
+    setEditPrefix(data.prefix || '');
+  }
+
+  async function loadPrefixes() {
+    try {
+      const snap = await getDocs(collection(db, 'boardPrefixes'));
+      setPrefixes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch {}
   }
 
   async function handleToggleLike() {
@@ -53,7 +64,7 @@ export default function BoardPostPage({ params }) {
 
   async function handleEdit() {
     if (!editTitle.trim() || !editContent) { alert('제목과 내용을 입력해주세요.'); return; }
-    await updateDoc(doc(db, 'board', id), { title: editTitle, content: editContent, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'board', id), { title: editTitle, prefix: editPrefix, content: editContent, updatedAt: serverTimestamp() });
     setEditing(false);
     loadPost();
   }
@@ -85,6 +96,12 @@ export default function BoardPostPage({ params }) {
       <div className="card" style={{ padding: 20, marginBottom: 16 }}>
         {editing ? (
           <div>
+            {prefixes.length > 0 && (
+              <select value={editPrefix} onChange={e => setEditPrefix(e.target.value)} style={{ marginBottom: 8 }}>
+                <option value="">글머리 선택 (선택사항)</option>
+                {prefixes.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+              </select>
+            )}
             <input value={editTitle} onChange={e => setEditTitle(e.target.value)} style={{ marginBottom: 10 }} />
             <QuillEditor
               value={editContent}

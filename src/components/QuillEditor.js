@@ -8,6 +8,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const fileInputRef = useRef(null);
   const containerRef = useRef(null);
   const [menu, setMenu] = useState(null); // { x, y, img }
+  const isComposing = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -119,6 +120,11 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     return () => setMenu(null);
   }, []);
 
+  const handleChange = useCallback((val) => {
+    if (isComposing.current) return;
+    if (onChange) onChange(val);
+  }, [onChange]);
+
   const setSize = (cls) => {
     if (!menu?.img) return;
     menu.img.classList.remove('img-sm', 'img-md', 'img-lg');
@@ -141,12 +147,21 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', minHeight }}>
+    <div
+      ref={containerRef}
+      style={{ position: 'relative', minHeight }}
+      onCompositionStart={() => { isComposing.current = true; }}
+      onCompositionEnd={() => {
+        isComposing.current = false;
+        const quill = getQuill();
+        if (quill && onChange) onChange(quill.root.innerHTML);
+      }}
+    >
       <ReactQuill
         ref={reactQuillRef}
         theme="snow"
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         modules={modules}
         style={{ minHeight }}
