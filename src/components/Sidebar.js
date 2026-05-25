@@ -7,14 +7,15 @@ import ModeToggle from '@/components/ModeToggle';
 
 // Maps to existing routes in this codebase.
 const NAV = [
-  { href: '/',         label: '홈',         color: 'var(--dd-menu-1)' },
-  { href: '/books',    label: '도서 목록',  color: 'var(--dd-menu-2)' },
-  { href: '/featured', label: '이 주의 글', color: 'var(--dd-menu-3)' },
-  { href: '/schedule', label: '모임 일정',  color: 'var(--dd-menu-4)' },
-  { href: '/reviews',  label: '내 감상평',  color: 'var(--dd-menu-5)' },
-  { href: '/board',    label: '자유게시판', color: 'var(--dd-menu-6)' },
-  { href: '/notice',   label: '공지사항',   color: 'var(--dd-menu-7)' },
-  { href: '/admin',    label: '관리자',     color: 'var(--dd-menu-8)' },
+  { href: '/',         label: '홈',              color: 'var(--dd-menu-1)' },
+  { href: '/books',    label: '도서 목록',        color: 'var(--dd-menu-2)' },
+  { href: '/featured', label: '이 주의 글',       color: 'var(--dd-menu-3)' },
+  { href: '/schedule', label: '모임 일정',        color: 'var(--dd-menu-4)' },
+  { href: '/reviews',  label: '내 감상평',        color: 'var(--dd-menu-5)' },
+  { href: '/board',    label: '자유게시판',       color: 'var(--dd-menu-6)' },
+  { href: '/notice',   label: '공지사항',         color: 'var(--dd-menu-7)' },
+  { href: '/admin',    label: '관리자',           color: 'var(--dd-menu-8)' },
+  { href: 'https://sihwa.vercel.app', label: '제휴사이트 – 시화', color: 'var(--dd-menu-3)', external: true },
 ];
 
 function isActiveFor(pathname, href) {
@@ -66,72 +67,61 @@ export default function Sidebar() {
 
         {/* Spine menu */}
         {NAV.map((n) => {
-          const active = isActiveFor(pathname, n.href);
+          const active = !n.external && isActiveFor(pathname, n.href);
+          const commonStyle = {
+            position: 'relative', height: 38,
+            marginLeft: active ? 0 : 6,
+            background: n.color,
+            borderTopLeftRadius: 3, borderBottomLeftRadius: 3,
+            boxShadow: active
+              ? 'inset 4px 0 0 var(--dd-accent), 0 3px 8px -3px rgba(0,0,0,.35)'
+              : 'inset 2px 0 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.2)',
+            transition: 'margin .14s, box-shadow .14s',
+            display: 'flex', alignItems: 'center', padding: '0 14px',
+            color: 'rgba(255,255,255,.95)', fontSize: 13, fontWeight: 500,
+            fontFamily: 'var(--dd-serif)', letterSpacing: '0.04em',
+          };
+          const inner = (
+            <>
+              <span
+                style={{ width: 1, height: 18, background: 'rgba(255,255,255,.28)', marginRight: 10 }}
+                aria-hidden="true"
+              />
+              {n.label}
+              {n.external && <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}>↗</span>}
+            </>
+          );
+          if (n.external) {
+            return (
+              <button
+                key={n.href}
+                type="button"
+                onClick={() => {
+                  if (confirm(`${n.label} 사이트로 이동할까요?\n새 탭에서 열립니다.`)) {
+                    window.open(n.href, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                style={{ ...commonStyle, border: 0, cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                onMouseEnter={(e) => { e.currentTarget.style.marginLeft = '0px'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.marginLeft = '6px'; }}
+              >
+                {inner}
+              </button>
+            );
+          }
           return (
             <Link
               key={n.href}
               href={n.href}
               onClick={closeOnMobileNav}
-              style={{
-                position: 'relative', height: 38,
-                marginLeft: active ? 0 : 6,
-                background: n.color,
-                borderTopLeftRadius: 3, borderBottomLeftRadius: 3,
-                boxShadow: active
-                  ? 'inset 4px 0 0 var(--dd-accent), 0 3px 8px -3px rgba(0,0,0,.35)'
-                  : 'inset 2px 0 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.2)',
-                transition: 'margin .14s, box-shadow .14s',
-                display: 'flex', alignItems: 'center', padding: '0 14px',
-                color: 'rgba(255,255,255,.95)', fontSize: 13, fontWeight: 500,
-                fontFamily: 'var(--dd-serif)', letterSpacing: '0.04em',
-                textDecoration: 'none',
-              }}
+              style={{ ...commonStyle, textDecoration: 'none' }}
               onMouseEnter={(e) => { if (!active) e.currentTarget.style.marginLeft = '0px'; }}
               onMouseLeave={(e) => { if (!active) e.currentTarget.style.marginLeft = '6px'; }}
             >
-              <span
-                style={{
-                  width: 1, height: 18,
-                  background: 'rgba(255,255,255,.28)',
-                  marginRight: 10,
-                }}
-                aria-hidden="true"
-              />
-              {n.label}
+              {inner}
             </Link>
           );
         })}
-
-        {/* 제휴사이트 */}
-        <button
-          type="button"
-          onClick={() => {
-            if (confirm('시화 사이트로 이동할까요?\n새 탭에서 열립니다.')) {
-              window.open('https://sihwa.vercel.app', '_blank', 'noopener,noreferrer');
-            }
-          }}
-          style={{
-            position: 'relative', height: 38,
-            marginLeft: 6,
-            background: 'var(--dd-menu-3)',
-            borderTopLeftRadius: 3, borderBottomLeftRadius: 3,
-            boxShadow: 'inset 2px 0 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.2)',
-            transition: 'margin .14s, box-shadow .14s',
-            display: 'flex', alignItems: 'center', padding: '0 14px',
-            color: 'rgba(255,255,255,.95)', fontSize: 13, fontWeight: 500,
-            fontFamily: 'var(--dd-serif)', letterSpacing: '0.04em',
-            border: 0, cursor: 'pointer', textAlign: 'left', width: '100%',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.marginLeft = '0px'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.marginLeft = '6px'; }}
-        >
-          <span
-            style={{ width: 1, height: 18, background: 'rgba(255,255,255,.28)', marginRight: 10 }}
-            aria-hidden="true"
-          />
-          제휴사이트 – 시화
-          <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}>↗</span>
-        </button>
 
         <div style={{ flex: 1 }} />
 
