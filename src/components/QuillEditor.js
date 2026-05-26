@@ -12,6 +12,13 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; });
 
+  // iOS IME 핵심 수정: Quill에게 넘기는 값을 로컬 state로 격리
+  // 조합 중에 부모의 value prop이 ReactQuill로 흘러들어가 DOM을 리셋하는 것을 차단
+  const [quillValue, setQuillValue] = useState(() => value ?? '');
+  useEffect(() => {
+    if (!isComposing.current) setQuillValue(value ?? '');
+  }, [value]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     import('react-quill-new').then(m => setReactQuill(() => m.default));
@@ -87,9 +94,9 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
 
     const onStart = () => { isComposing.current = true; };
     const onEnd = () => {
+      // 캡처 단계로 Quill보다 먼저 실행 → isComposing=false 설정 후
+      // Quill 자체 compositionend 핸들러가 onChange를 발화하면 handleChange에서 통과됨
       isComposing.current = false;
-      // compositionend 시 Quill의 onChange가 차단됐을 수 있으므로 직접 flush
-      if (onChangeRef.current) onChangeRef.current(quill.root.innerHTML);
     };
 
     root.addEventListener('compositionstart', onStart, true);
@@ -146,6 +153,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
 
   const handleChange = useCallback((val) => {
     if (isComposing.current) return;
+    setQuillValue(val);
     if (onChange) onChange(val);
   }, [onChange]);
 
@@ -178,7 +186,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       <ReactQuill
         ref={reactQuillRef}
         theme="snow"
-        value={value}
+        value={quillValue}
         onChange={handleChange}
         placeholder={placeholder}
         modules={modules}
