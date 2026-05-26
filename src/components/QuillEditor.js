@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
 
+// 빈 에디터 정규화: Quill 기본 빈 상태('<p><br></p>')와 ''를 동일하게 취급
+const normalizeHtml = (html) => (!html || html === '<p><br></p>') ? '' : html;
+
 export default function QuillEditor({ value, onChange, placeholder, minHeight = 120, onImageUpload }) {
   const [ReactQuill, setReactQuill] = useState(null);
   const reactQuillRef = useRef(null);
@@ -9,15 +12,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const containerRef = useRef(null);
   const [menu, setMenu] = useState(null); // { x, y, img }
   const isComposing = useRef(false);
-  const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; });
-
-  // iOS IME 핵심 수정: Quill에게 넘기는 값을 로컬 state로 격리
-  // 조합 중에 부모의 value prop이 ReactQuill로 흘러들어가 DOM을 리셋하는 것을 차단
-  const [quillValue, setQuillValue] = useState(() => value ?? '');
-  useEffect(() => {
-    if (!isComposing.current) setQuillValue(value ?? '');
-  }, [value]);
+  // 사용자 입력으로 인한 변경 여부 추적 — true이면 value prop 변경이 자기 자신이 발생시킨 것
+  const isSelfChange = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -27,7 +23,11 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const getQuill = useCallback(() => {
     const node = reactQuillRef.current;
     if (!node) return null;
-    if (typeof node.getEditor === 'function') return node.getEditor();
+    try {
+      if (typeof node.getEditor === 'function') return node.getEditor();
+    } catch {
+      return null;
+    }
     return node.editor || null;
   }, []);
 
@@ -53,14 +53,12 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       quill.insertEmbed(range.index, 'image', url, 'user');
       quill.insertText(range.index + 1, '\n', 'user');
       quill.setSelection(range.index + 2, 0);
-      // 마지막 삽입된 img에 기본 클래스 부여
       requestAnimationFrame(() => {
         const editorRoot = quill.root;
         const imgs = editorRoot?.querySelectorAll('img');
         const last = imgs && imgs[imgs.length - 1];
         if (last && !last.classList.contains('img-sm') && !last.classList.contains('img-md') && !last.classList.contains('img-lg')) {
           last.classList.add('img-md');
-          // 클래스 추가 후 onChange 트리거
           if (onChange) onChange(quill.root.innerHTML);
         }
       });
@@ -85,7 +83,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     },
   }), [handleImageClick]);
 
-  // iOS 한글 IME 버그 수정: quill.root에 캡처 단계로 직접 부착해 Quill 내부 핸들러보다 먼저 실행
+  // iOS 한글 IME 버그 수정: 캡처 단계로 Quill 내부 핸들러보다 먼저 실행
   useEffect(() => {
     if (!ReactQuill) return;
     const quill = getQuill();
@@ -93,11 +91,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     const root = quill.root;
 
     const onStart = () => { isComposing.current = true; };
-    const onEnd = () => {
-      // 캡처 단계로 Quill보다 먼저 실행 → isComposing=false 설정 후
-      // Quill 자체 compositionend 핸들러가 onChange를 발화하면 handleChange에서 통과됨
-      isComposing.current = false;
-    };
+    const onEnd = () => { isComposing.current = false; };
 
     root.addEventListener('compositionstart', onStart, true);
     root.addEventListener('compositionend', onEnd, true);
@@ -106,6 +100,20 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       root.removeEventListener('compositionend', onEnd, true);
     };
   }, [ReactQuill, getQuill]);
+
+  // 외부 value 변경 시에만 Quill 내용 업데이트 (guide-1 방식 — 직접 API 호출)
+  // isSelfChange가 true이면 사용자 타이핑이 부모 state를 바꿔 생긴 반향이므로 무시
+  useEffect(() => {
+    if (!ReactQuill) return;
+    if (isSelfChange.current) { isSelfChange.current = false; return; }
+    const quill = getQuill();
+    if (!quill) return;
+    const current = normalizeHtml(quill.root.innerHTML);
+    const next = normalizeHtml(value);
+    if (current === next) return;
+    const delta = quill.clipboard.convert({ html: value ?? '' });
+    quill.setContents(delta, 'api');
+  }, [ReactQuill, value, getQuill]);
 
   // 에디터 내 이미지 클릭 → 플로팅 메뉴
   useEffect(() => {
@@ -146,14 +154,15 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     };
   }, [ReactQuill, getQuill]);
 
-  // unmount 정리
   useEffect(() => {
     return () => setMenu(null);
   }, []);
 
   const handleChange = useCallback((val) => {
     if (isComposing.current) return;
-    setQuillValue(val);
+    // 이 변경은 사용자 입력에서 왔으므로, 부모 state 업데이트가 value prop을 바꿔도
+    // DOM을 다시 건드리지 않도록 표시
+    isSelfChange.current = true;
     if (onChange) onChange(val);
   }, [onChange]);
 
@@ -186,7 +195,6 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       <ReactQuill
         ref={reactQuillRef}
         theme="snow"
-        value={quillValue}
         onChange={handleChange}
         placeholder={placeholder}
         modules={modules}
