@@ -9,6 +9,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const containerRef = useRef(null);
   const [menu, setMenu] = useState(null); // { x, y, img }
   const isComposing = useRef(false);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -75,6 +77,28 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       handlers: { image: handleImageClick },
     },
   }), [handleImageClick]);
+
+  // iOS 한글 IME 버그 수정: quill.root에 캡처 단계로 직접 부착해 Quill 내부 핸들러보다 먼저 실행
+  useEffect(() => {
+    if (!ReactQuill) return;
+    const quill = getQuill();
+    if (!quill) return;
+    const root = quill.root;
+
+    const onStart = () => { isComposing.current = true; };
+    const onEnd = () => {
+      isComposing.current = false;
+      // compositionend 시 Quill의 onChange가 차단됐을 수 있으므로 직접 flush
+      if (onChangeRef.current) onChangeRef.current(quill.root.innerHTML);
+    };
+
+    root.addEventListener('compositionstart', onStart, true);
+    root.addEventListener('compositionend', onEnd, true);
+    return () => {
+      root.removeEventListener('compositionstart', onStart, true);
+      root.removeEventListener('compositionend', onEnd, true);
+    };
+  }, [ReactQuill, getQuill]);
 
   // 에디터 내 이미지 클릭 → 플로팅 메뉴
   useEffect(() => {
@@ -150,8 +174,6 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     <div
       ref={containerRef}
       style={{ position: 'relative', minHeight }}
-      onCompositionStart={() => { isComposing.current = true; }}
-      onCompositionEnd={() => { isComposing.current = false; }}
     >
       <ReactQuill
         ref={reactQuillRef}
