@@ -75,6 +75,16 @@ export default function FeaturedDetailPage({ params }) {
 
   const isAdmin = profile?.role === 'admin';
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
+
+  async function handleShare() {
+    const url = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: passage.bookTitle, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert('링크가 복사됐어요!');
+    }
+  }
   const topComments = comments.filter(c => !c.parentId);
   const getReplies = (commentId) => comments.filter(c => c.parentId === commentId);
 
@@ -152,6 +162,13 @@ export default function FeaturedDetailPage({ params }) {
             </div>
           </>
         )}
+
+        {/* 공유 버튼 */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+          <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: '1.5px solid var(--line)', borderRadius: 20, background: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
+            공유
+          </button>
+        </div>
       </div>
 
       {/* 토론 질문 */}
