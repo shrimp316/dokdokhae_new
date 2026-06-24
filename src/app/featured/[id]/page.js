@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
 import { dangerousHtml } from '@/lib/sanitize';
@@ -12,10 +12,14 @@ import ContentLightbox from '@/components/ContentLightbox';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
+const NICKNAME_KEY = 'featuredAnonNickname';
+const NICKNAME_MIN = 2;
+const NICKNAME_MAX = 20;
+
 export default function FeaturedDetailPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, anonymousUser } = useAuth();
 
   const [passage, setPassage] = useState(null);
   const [comments, setComments] = useState([]);
@@ -24,6 +28,10 @@ export default function FeaturedDetailPage({ params }) {
   const [replyText, setReplyText] = useState('');
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const [anonNicknameInput, setAnonNicknameInput] = useState('');
+
+  const isMember = !!(user && profile);
+  const canComment = isMember || !!anonymousUser;
 
   useEffect(() => {
     getDoc(doc(db, 'featuredPassages', id)).then(snap => {
@@ -31,6 +39,18 @@ export default function FeaturedDetailPage({ params }) {
     });
     loadComments();
   }, [id]);
+
+  useEffect(() => {
+    if (user || anonymousUser) return;
+    if (typeof window === 'undefined') return;
+    const saved = sessionStorage.getItem(NICKNAME_KEY) || '';
+    setAnonNicknameInput(saved);
+  }, [user, anonymousUser]);
+
+  useEffect(() => {
+    if (user || anonymousUser) return;
+    signInAnonymously(auth).catch(() => {});
+  }, [user, anonymousUser]);
 
   async function loadComments() {
     const snap = await getDocs(query(collection(db, 'featuredPassages', id, 'comments'), orderBy('createdAt', 'asc')));
@@ -40,14 +60,27 @@ export default function FeaturedDetailPage({ params }) {
   const isEmptyHtml = (html) => !html || html.replace(/<(.|\n)*?>/g, '').trim() === '';
 
   async function addComment(parentId = null) {
-    if (!user) { router.push('/login'); return; }
+    if (!canComment) return;
     const text = parentId ? replyText : commentText;
     if (parentId ? !text.trim() : isEmptyHtml(text)) return;
+    let nickname;
+    if (isMember) {
+      nickname = profile.nickname;
+    } else {
+      nickname = anonNicknameInput.trim();
+      if (!nickname || nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
+        alert(`닉네임을 ${NICKNAME_MIN}~${NICKNAME_MAX}자로 입력해주세요.`);
+        return;
+      }
+    }
+    const commentUid = isMember ? user.uid : anonymousUser.uid;
     await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
       content: parentId ? text.trim() : text,
-      nickname: profile.nickname, uid: user.uid,
+      nickname,
+      uid: commentUid,
       parentId: parentId || null,
       isRich: !parentId,
+      ...(isMember ? {} : { isAnonymous: true }),
       createdAt: serverTimestamp(),
     });
     if (parentId) { setReplyText(''); setReplyTo(null); }
@@ -74,7 +107,17 @@ export default function FeaturedDetailPage({ params }) {
   }
 
   const isAdmin = profile?.role === 'admin';
+  const effectiveUid = user?.uid || anonymousUser?.uid || null;
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
+
+  function saveAnonNickname(name) {
+    const trimmed = name.trim();
+    if (trimmed.length >= NICKNAME_MIN && trimmed.length <= NICKNAME_MAX) {
+      try { sessionStorage.setItem(NICKNAME_KEY, trimmed); } catch {}
+    } else {
+      try { sessionStorage.removeItem(NICKNAME_KEY); } catch {}
+    }
+  }
 
   async function handleShare() {
     const url = window.location.href;
@@ -193,8 +236,23 @@ export default function FeaturedDetailPage({ params }) {
         </h3>
 
         {/* 댓글 작성 */}
-        {user ? (
+        {canComment ? (
           <div style={{ marginBottom: 16 }}>
+            {!isMember && (
+              <div style={{ marginBottom: 8 }}>
+                <input
+                  type="text"
+                  placeholder={`닉네임 (${NICKNAME_MIN}~${NICKNAME_MAX}자) *`}
+                  value={anonNicknameInput}
+                  maxLength={NICKNAME_MAX}
+                  onChange={e => {
+                    setAnonNicknameInput(e.target.value);
+                    saveAnonNickname(e.target.value);
+                  }}
+                  style={{ fontSize: 13 }}
+                />
+              </div>
+            )}
             <QuillEditor
               value={commentText}
               onChange={setCommentText}
@@ -208,7 +266,7 @@ export default function FeaturedDetailPage({ params }) {
           </div>
         ) : (
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
-            <Link href="/login" style={{ color: 'var(--accent)' }}>로그인</Link>하면 댓글을 남길 수 있어요.
+            댓글을 준비하는 중이에요…
           </p>
         )}
 
@@ -223,13 +281,16 @@ export default function FeaturedDetailPage({ params }) {
               <div className="comment-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{c.nickname}</span>
+                  {c.isAnonymous && (
+                    <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '1px 7px' }}>비회원</span>
+                  )}
                   <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(c.createdAt)}</span>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-                    {user && (
+                    {canComment && (
                       <button onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
                         style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>답글</button>
                     )}
-                    {(user?.uid === c.uid || isAdmin) && (
+                    {(effectiveUid === c.uid || isAdmin) && (
                       <>
                         <button onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.content); }}
                           style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>수정</button>
@@ -281,8 +342,11 @@ export default function FeaturedDetailPage({ params }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>↩</span>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{r.nickname}</span>
+                    {r.isAnonymous && (
+                      <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '1px 7px' }}>비회원</span>
+                    )}
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDate(r.createdAt)}</span>
-                    {(user?.uid === r.uid || isAdmin) && (
+                    {(effectiveUid === r.uid || isAdmin) && (
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
                         <button onClick={() => { setEditingCommentId(r.id); setEditCommentText(r.content); }}
                           style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>수정</button>

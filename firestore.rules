@@ -119,8 +119,14 @@ service cloud.firestore {
 
       match /comments/{cid} {
         allow read: if true;
-        allow create: if isSignedIn() &&
-          request.resource.data.uid == request.auth.uid;
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.nickname is string
+          && request.resource.data.nickname.size() > 0
+          && request.resource.data.nickname.size() <= 20
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.content.size() <= 5000;
         allow update, delete: if isOwner(resource.data.uid) || isAdmin();
       }
     }
