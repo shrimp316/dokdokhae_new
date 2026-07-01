@@ -21,6 +21,18 @@ export function useFCM() {
     if (Notification.permission === 'granted') saveToken();
   }, [user]);
 
+  // 포그라운드 메시지 리스너는 앱 생애주기당 한 번만 등록 (saveToken이 여러 번
+  // 호출돼도 리스너가 중복 등록되어 알림이 여러 번 뜨는 것을 방지)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    const messaging = getMessaging(app);
+    const unsubscribe = onMessage(messaging, (payload) => {
+      const { title, body } = payload.notification || {};
+      if (title) new Notification(title, { body, icon: '/icon-192.png' });
+    });
+    return unsubscribe;
+  }, []);
+
   async function saveToken() {
     try {
       const sw = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
@@ -37,10 +49,6 @@ export function useFCM() {
         });
         console.log('FCM 토큰 저장 완료');
       }
-      onMessage(messaging, (payload) => {
-        const { title, body } = payload.notification || {};
-        if (title) new Notification(title, { body, icon: '/icon-192.png' });
-      });
     } catch (e) {
       console.warn('FCM 토큰 저장 실패:', e);
     }
