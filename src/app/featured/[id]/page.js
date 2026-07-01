@@ -75,7 +75,7 @@ export default function FeaturedDetailPage({ params }) {
       }
     }
     const commentUid = isMember ? user.uid : anonymousUser.uid;
-    await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
+    const commentRef = await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
       content: parentId ? text.trim() : text,
       nickname,
       uid: commentUid,
@@ -84,6 +84,11 @@ export default function FeaturedDetailPage({ params }) {
       ...(isMember ? {} : { isAnonymous: true }),
       createdAt: serverTimestamp(),
     });
+    fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'comment', collectionName: 'featuredPassages', postId: id, commentId: commentRef.id }),
+    }).catch(() => {});
     if (parentId) { setReplyText(''); setReplyTo(null); }
     else setCommentText('');
     loadComments();

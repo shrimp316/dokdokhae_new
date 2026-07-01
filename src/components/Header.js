@@ -4,6 +4,7 @@ import { collection, getDocs, query, where, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 
 function volumeNumber() {
   // 2026-01 = Vol. 02 ... aim for stable display tied to year.
@@ -72,6 +73,7 @@ export default function Header() {
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        {user && <NotificationBell />}
         {!user && (
           <button
             type="button"

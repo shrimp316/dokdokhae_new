@@ -6,6 +6,14 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+function notify(payload) {
+  fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+
 export function useLikes(collectionName, postId, user) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -54,6 +62,7 @@ export function useLikes(collectionName, postId, user) {
           tx.update(postRef, { likeCount: current + 1 });
         }
       });
+      if (willLike) notify({ type: 'like', collectionName, postId, actorUid: user.uid });
     } catch (err) {
       console.error('toggleLike failed', err);
       // rollback optimistic UI
@@ -96,11 +105,12 @@ export function useComments(collectionName, postId) {
 
   async function addComment({ content, nickname, uid, parentId = null }) {
     if (!content?.trim()) return;
-    await addDoc(collection(db, collectionName, postId, 'comments'), {
+    const docRef = await addDoc(collection(db, collectionName, postId, 'comments'), {
       content: content.trim(), nickname, uid,
       parentId: parentId || null,
       createdAt: serverTimestamp(),
     });
+    notify({ type: 'comment', collectionName, postId, commentId: docRef.id });
     await loadComments();
   }
 
