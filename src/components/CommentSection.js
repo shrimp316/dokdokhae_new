@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useComments } from '@/lib/usePostInteractions';
+import ExpandableContent from '@/components/ExpandableContent';
 
 export default function CommentSection({ collectionName, postId, isAdmin = false }) {
   const { user, profile } = useAuth();
@@ -101,7 +102,10 @@ function CommentItem({
               <button type="button" className="btn-sm" onClick={(e) => { e.stopPropagation(); setEditCommentId(null); }}>취소</button>
             </div>
           ) : (
-            <div style={{ fontSize: 13, marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{comment.content}</div>
+            <ExpandableContent
+              text={comment.content}
+              style={{ fontSize: 13, marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+            />
           )}
         </div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -133,7 +137,10 @@ function CommentItem({
                     <button type="button" className="btn-sm" onClick={(e) => { e.stopPropagation(); setEditCommentId(null); }}>취소</button>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 13, marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{r.content}</div>
+                  <ExpandableContent
+                    text={r.content}
+                    style={{ fontSize: 13, marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  />
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

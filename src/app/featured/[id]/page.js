@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
+import ExpandableContent from '@/components/ExpandableContent';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -319,7 +320,7 @@ export default function FeaturedDetailPage({ params }) {
                     contentClassName="ql-editor ql-snow"
                     contentStyle={{ fontSize: 14, lineHeight: 1.7, padding: 0, border: 'none' }}
                   >
-                    <div dangerouslySetInnerHTML={dangerousHtml(c.content)} />
+                    <ExpandableContent html={dangerousHtml(c.content)} />
                   </ContentLightbox>
                 )}
 
@@ -363,7 +364,10 @@ export default function FeaturedDetailPage({ params }) {
                       <button onClick={() => setEditingCommentId(null)} className="btn-sm btn-outline">취소</button>
                     </div>
                   ) : (
-                    <p style={{ fontSize: 13, lineHeight: 1.6 }}>{r.content}</p>
+                    <ExpandableContent
+                      text={r.content}
+                      style={{ fontSize: 13, lineHeight: 1.6 }}
+                    />
                   )}
                 </div>
               ))}
