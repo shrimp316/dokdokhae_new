@@ -14,6 +14,14 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const isComposing = useRef(false);
   // 사용자 입력으로 인한 변경 여부 추적 — true이면 value prop 변경이 자기 자신이 발생시킨 것
   const isSelfChange = useRef(false);
+  // onImageUpload/onChange는 페이지에서 인라인 함수로 넘어와 매 렌더마다 참조가 바뀜.
+  // ref로 우회해서 handleImageClick(→modules)이 항상 같은 참조를 유지하도록 함 —
+  // modules 참조가 바뀌면 react-quill-new가 Quill 인스턴스를 통째로 destroy/재생성해서
+  // 타이핑 중(특히 한글 조합 중)에 그 타이밍과 겹치면 자음분리가 발생함.
+  const onImageUploadRef = useRef(onImageUpload);
+  onImageUploadRef.current = onImageUpload;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -32,12 +40,12 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   }, []);
 
   const handleImageClick = useCallback(() => {
-    if (!onImageUpload) {
+    if (!onImageUploadRef.current) {
       alert('이미지 업로드가 지원되지 않습니다.');
       return;
     }
     fileInputRef.current?.click();
-  }, [onImageUpload]);
+  }, []);
 
   const onFileChosen = useCallback(async (e) => {
     const file = e.target.files?.[0];
@@ -48,7 +56,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     let range = quill.getSelection(true);
     if (!range) range = { index: quill.getLength(), length: 0 };
     try {
-      const url = await onImageUpload(file);
+      const url = await onImageUploadRef.current(file);
       if (!url) return;
       quill.insertEmbed(range.index, 'image', url, 'user');
       quill.insertText(range.index + 1, '\n', 'user');
@@ -59,20 +67,20 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
         const last = imgs && imgs[imgs.length - 1];
         if (last && !last.classList.contains('img-sm') && !last.classList.contains('img-md') && !last.classList.contains('img-lg')) {
           last.classList.add('img-md');
-          if (onChange) onChange(quill.root.innerHTML);
+          if (onChangeRef.current) onChangeRef.current(quill.root.innerHTML);
         }
       });
     } catch (err) {
       console.error('image upload failed', err);
       alert('이미지 업로드에 실패했어요.');
     }
-  }, [getQuill, onImageUpload, onChange]);
+  }, [getQuill]);
 
   const modules = useMemo(() => ({
     toolbar: {
       container: [
         [{ header: [2, 3, false] }],
-        ['bold', 'italic', 'underline'],
+        ['bold', 'italic', 'underline', 'strike'],
         [{ color: [] }],
         [{ size: ['small', false, 'large', 'huge'] }],
         [{ list: 'ordered' }, { list: 'bullet' }],
