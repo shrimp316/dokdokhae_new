@@ -10,31 +10,7 @@ firebase.initializeApp({
   appId: "1:437878503798:web:e2a88fff6ea5e3f187e257",
 });
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const { notifId, url, title, body } = payload.data || {};
-  if (title) {
-    self.registration.showNotification(title, {
-      body,
-      icon: '/icon-192.png',
-      tag: notifId,
-      data: { url },
-    });
-  }
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const url = event.notification.data?.url || '/';
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          return client.navigate(url).catch(() => client).then((c) => c.focus());
-        }
-      }
-      if (clients.openWindow) return clients.openWindow(url);
-    }),
-  );
-});
+// onBackgroundMessage를 직접 구현하지 않음: SDK의 기본 자동 표시(webpush.notification 기반)와
+// fcmOptions.link 클릭 이동을 그대로 사용. 직접 showNotification을 호출하면 SDK 자동 표시와
+// 겹쳐서 알림이 2개 뜨는 문제가 있었음.
+firebase.messaging();

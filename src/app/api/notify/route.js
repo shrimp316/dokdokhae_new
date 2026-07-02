@@ -149,7 +149,12 @@ export async function POST(request) {
       try {
         await getMessaging().send({
           token,
-          data: { notifId, url, title, body: preview || '' },
+          notification: { title, body: preview || undefined },
+          data: { notifId, url },
+          webpush: {
+            notification: { title, body: preview || undefined, icon: '/icon-192.png', tag: notifId },
+            fcmOptions: { link: url },
+          },
         });
       } catch (e) {
         if (e?.code === 'messaging/registration-token-not-registered') {

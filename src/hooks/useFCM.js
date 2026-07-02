@@ -35,7 +35,8 @@ export function useFCM() {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     const messaging = getMessaging(app);
     const unsubscribe = onMessage(messaging, (payload) => {
-      const { notifId, url, title, body } = payload.data || {};
+      const { title, body } = payload.notification || {};
+      const { notifId, url } = payload.data || {};
       if (!title) return;
       const notif = new Notification(title, { body, icon: '/icon-192.png', tag: notifId });
       notif.onclick = () => {
