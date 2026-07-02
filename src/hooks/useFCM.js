@@ -4,6 +4,14 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { useAuth } from '@/lib/AuthContext';
 import app from '@/lib/firebase';
 
+function reportDebug(uid, stage, reason, context) {
+  fetch('/api/fcm-debug', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uid, stage, reason, context }),
+  }).catch(() => {});
+}
+
 export function useFCM() {
   const { user } = useAuth();
   const [permission, setPermission] = useState('default');
@@ -27,8 +35,14 @@ export function useFCM() {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     const messaging = getMessaging(app);
     const unsubscribe = onMessage(messaging, (payload) => {
-      const { title, body } = payload.notification || {};
-      if (title) new Notification(title, { body, icon: '/icon-192.png' });
+      const { notifId, url, title, body } = payload.data || {};
+      if (!title) return;
+      const notif = new Notification(title, { body, icon: '/icon-192.png', tag: notifId });
+      notif.onclick = () => {
+        window.focus();
+        if (url) window.location.href = url;
+        notif.close();
+      };
     });
     return unsubscribe;
   }, []);
@@ -48,9 +62,19 @@ export function useFCM() {
           body: JSON.stringify({ token, uid: user.uid }),
         });
         console.log('FCM 토큰 저장 완료');
+      } else {
+        reportDebug(user.uid, 'no-token-returned');
       }
     } catch (e) {
       console.warn('FCM 토큰 저장 실패:', e);
+      reportDebug(user.uid, 'token-save-failed', e.message, {
+        displayMode: typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+          ? 'standalone' : 'browser',
+        iosStandalone: typeof navigator.standalone === 'boolean' ? navigator.standalone : null,
+        swSupported: 'serviceWorker' in navigator,
+        notificationSupported: 'Notification' in window,
+        userAgent: navigator.userAgent,
+      });
     }
   }
 
@@ -59,7 +83,10 @@ export function useFCM() {
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      if (result !== 'granted') return;
+      if (result !== 'granted') {
+        reportDebug(user.uid, 'permission-denied', result);
+        return;
+      }
       await saveToken();
     } catch (e) {
       console.warn('FCM 초기화 실패:', e);

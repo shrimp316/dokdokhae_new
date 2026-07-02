@@ -13,11 +13,28 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification || {};
+  const { notifId, url, title, body } = payload.data || {};
   if (title) {
     self.registration.showNotification(title, {
       body,
       icon: '/icon-192.png',
+      tag: notifId,
+      data: { url },
     });
   }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.navigate(url).catch(() => client).then((c) => c.focus());
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    }),
+  );
 });

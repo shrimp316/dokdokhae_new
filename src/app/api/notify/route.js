@@ -132,6 +132,12 @@ export async function POST(request) {
 
     const tokenSnap = await db.collection('fcmTokens').doc(recipientUid).get();
     const token = tokenSnap.exists ? tokenSnap.data().token : null;
+    if (!token) {
+      await db.collection('fcmDiagnostics').add({
+        uid: recipientUid, stage: 'no-token', reason: null,
+        context: { collectionName, postId }, createdAt: FieldValue.serverTimestamp(),
+      });
+    }
     if (token) {
       const url = postUrl(collectionName, postId, resolved.bookId);
       const titleByType = {
@@ -143,11 +149,7 @@ export async function POST(request) {
       try {
         await getMessaging().send({
           token,
-          notification: { title, body: preview || undefined },
-          webpush: {
-            notification: { title, body: preview || undefined, icon: '/icon-192.png' },
-            fcmOptions: { link: url },
-          },
+          data: { notifId, url, title, body: preview || '' },
         });
       } catch (e) {
         if (e?.code === 'messaging/registration-token-not-registered') {
@@ -155,6 +157,10 @@ export async function POST(request) {
         } else {
           console.error('notify push failed', e);
         }
+        await db.collection('fcmDiagnostics').add({
+          uid: recipientUid, stage: 'send-failed', reason: e?.code || e?.message || String(e),
+          context: { collectionName, postId }, createdAt: FieldValue.serverTimestamp(),
+        });
       }
     }
 
