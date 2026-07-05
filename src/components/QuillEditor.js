@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
 
+const SIZE_LIST = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
+
 // 빈 에디터 정규화: Quill 기본 빈 상태('<p><br></p>')와 ''를 동일하게 취급
 const normalizeHtml = (html) => (!html || html === '<p><br></p>') ? '' : html;
 
@@ -25,7 +27,14 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    import('react-quill-new').then(m => setReactQuill(() => m.default));
+    Promise.all([import('react-quill-new'), import('quill')]).then(
+      ([{ default: RQ }, { default: Quill }]) => {
+        const SizeStyle = Quill.import('attributors/style/size');
+        SizeStyle.whitelist = SIZE_LIST;
+        Quill.register(SizeStyle, true);
+        setReactQuill(() => RQ);
+      }
+    );
   }, []);
 
   const getQuill = useCallback(() => {
@@ -82,7 +91,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
         [{ header: [2, 3, false] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ color: [] }],
-        [{ size: ['small', false, 'large', 'huge'] }],
+        [{ size: [false, ...SIZE_LIST] }],
         [{ list: 'ordered' }, { list: 'bullet' }],
         ['blockquote', 'link', 'image'],
         ['clean'],
