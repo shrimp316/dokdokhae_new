@@ -18,7 +18,7 @@ const ALLOWED_ATTR = [
   'style',
 ];
 
-const ALLOWED_STYLE_PROPS = ['color', 'background-color'];
+const ALLOWED_STYLE_PROPS = ['color', 'background-color', 'font-size'];
 
 DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   if (node.tagName === 'A') {
