@@ -764,3 +764,9 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 }
 .ui-card-image { width: 100%; aspect-ratio: 1 / 1; background: var(--dd-accent-soft); border-radius: 2px; }
 .ui-card-text { height: 8px; background: var(--dd-border); border-radius: 999px; margin-bottom: 4px; }
+
+/* QuillEditor: px 글자크기 드롭다운 라벨 */
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before {
+  content: attr(data-value) !important;
+}
