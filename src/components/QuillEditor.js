@@ -27,14 +27,12 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    Promise.all([import('react-quill-new'), import('quill')]).then(
-      ([{ default: RQ }, { default: Quill }]) => {
-        const SizeStyle = Quill.import('attributors/style/size');
-        SizeStyle.whitelist = SIZE_LIST;
-        Quill.register(SizeStyle, true);
-        setReactQuill(() => RQ);
-      }
-    );
+    import('react-quill-new').then(({ default: RQ, Quill }) => {
+      const SizeStyle = Quill.import('attributors/style/size');
+      SizeStyle.whitelist = SIZE_LIST;
+      Quill.register(SizeStyle, true);
+      setReactQuill(() => RQ);
+    });
   }, []);
 
   const getQuill = useCallback(() => {
