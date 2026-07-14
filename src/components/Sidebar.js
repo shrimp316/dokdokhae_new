@@ -65,6 +65,39 @@ export default function Sidebar() {
           <em style={{ fontStyle: 'italic', color: 'var(--dd-accent)' }}>독독하다</em>
         </button>
 
+        {/* Profile (moved above the nav menu) */}
+        {user && profile && (
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '0 14px 18px',
+            }}
+          >
+            <span
+              style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: 'var(--dd-accent)', color: 'var(--dd-surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 600, flexShrink: 0,
+              }}
+            >
+              {profile.nickname?.slice(0, 1) || '·'}
+            </span>
+            <button
+              type="button"
+              onClick={() => { router.push('/mypage'); closeOnMobileNav(); }}
+              style={{
+                background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+                color: 'var(--dd-text)', fontSize: 12,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                display: 'block', textAlign: 'left', minWidth: 0,
+              }}
+            >
+              {profile.nickname}
+            </button>
+          </div>
+        )}
+
         {/* Spine menu */}
         {NAV.map((n) => {
           const active = !n.external && isActiveFor(pathname, n.href);
@@ -137,43 +170,17 @@ export default function Sidebar() {
           }}
         >
           {user && profile ? (
-            <>
-              <span
-                style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: 'var(--dd-accent)', color: 'var(--dd-surface)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 600,
-                }}
-              >
-                {profile.nickname?.slice(0, 1) || '·'}
-              </span>
-              <div style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => { router.push('/mypage'); closeOnMobileNav(); }}
-                  style={{
-                    background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
-                    color: 'var(--dd-text)', fontSize: 12,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    display: 'block', textAlign: 'left', width: '100%',
-                  }}
-                >
-                  {profile.nickname}
-                </button>
-                <button
-                  type="button"
-                  onClick={logout}
-                  style={{
-                    background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
-                    color: 'var(--dd-text-muted)', fontSize: 10,
-                    textDecoration: 'underline', textUnderlineOffset: 2,
-                  }}
-                >
-                  로그아웃
-                </button>
-              </div>
-            </>
+            <button
+              type="button"
+              onClick={logout}
+              style={{
+                background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+                color: 'var(--dd-text-muted)', fontSize: 10,
+                textDecoration: 'underline', textUnderlineOffset: 2,
+              }}
+            >
+              로그아웃
+            </button>
           ) : (
             <button
               type="button"

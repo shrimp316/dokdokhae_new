@@ -6,12 +6,6 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 
-function volumeNumber() {
-  // 2026-01 = Vol. 02 ... aim for stable display tied to year.
-  const y = new Date().getFullYear();
-  return String(Math.max(1, y - 2024)).padStart(2, '0');
-}
-
 export default function Header() {
   const router = useRouter();
   const { user } = useAuth();
@@ -27,7 +21,7 @@ export default function Header() {
         if (cancelled || snap.empty) return;
         setFeaturedTitle(snap.docs[0].data().title || '');
       } catch {
-        // ignore — header keeps Vol. only.
+        // ignore — header simply shows nothing if the fetch fails.
       }
     })();
     return () => { cancelled = true; };
@@ -41,35 +35,22 @@ export default function Header() {
           minWidth: 0, flex: 1,
         }}
       >
-        <span
-          style={{
-            fontFamily: 'var(--dd-serif)', fontSize: 11,
-            color: 'var(--dd-text-muted)',
-            letterSpacing: '0.25em', textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Vol. {volumeNumber()}
-        </span>
         {featuredTitle && (
-          <>
-            <span style={{ width: 18, height: 1, background: 'var(--dd-border)', flexShrink: 0 }} />
-            <button
-              type="button"
-              onClick={() => router.push('/books')}
-              style={{
-                appearance: 'none', background: 'transparent', border: 0, padding: 0,
-                cursor: 'pointer',
-                fontFamily: 'var(--dd-serif)', fontSize: 12, color: 'var(--dd-text)',
-                letterSpacing: '0.04em',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                minWidth: 0, textAlign: 'left',
-              }}
-              title={featuredTitle}
-            >
-              이 주의 책 · {featuredTitle}
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => router.push('/books')}
+            style={{
+              appearance: 'none', background: 'transparent', border: 0, padding: 0,
+              cursor: 'pointer',
+              fontFamily: 'var(--dd-serif)', fontSize: 14, color: 'var(--dd-text)',
+              letterSpacing: '0.04em',
+              overflow: 'hidden', textOverflow: 'ellipsis',
+              flex: 1, minWidth: 0, textAlign: 'left',
+            }}
+            title={featuredTitle}
+          >
+            이 주의 책 · {featuredTitle}
+          </button>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
