@@ -490,6 +490,62 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 .post-content p:last-child { margin-bottom: 0; }
 .post-content p:empty { min-height: 1em; }
 .review-content p:empty { min-height: 1em; }
+
+/* Quill 렌더링 콘텐츠 공통 스타일 — 에디터(.ql-editor) 밖에서도 목록/링크/인용구가 보이도록 */
+.post-content ol, .post-content ul,
+.review-content ol, .review-content ul,
+.notice-content ol, .notice-content ul {
+  margin: 0 0 0.6em;
+  padding-left: 0;
+}
+.post-content li, .review-content li, .notice-content li {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+.post-content li[data-list]::before,
+.review-content li[data-list]::before,
+.notice-content li[data-list]::before {
+  position: absolute;
+  left: 0;
+  width: 1.2em;
+  text-align: right;
+}
+.post-content li[data-list="bullet"]::before,
+.review-content li[data-list="bullet"]::before,
+.notice-content li[data-list="bullet"]::before {
+  content: '\2022';
+}
+.post-content ol, .review-content ol, .notice-content ol {
+  counter-reset: dd-list-item;
+}
+.post-content li[data-list="ordered"],
+.review-content li[data-list="ordered"],
+.notice-content li[data-list="ordered"] {
+  counter-increment: dd-list-item;
+}
+.post-content li[data-list="ordered"]::before,
+.review-content li[data-list="ordered"]::before,
+.notice-content li[data-list="ordered"]::before {
+  content: counter(dd-list-item) '.';
+}
+.post-content li.ql-indent-1, .review-content li.ql-indent-1, .notice-content li.ql-indent-1 { padding-left: 3em; }
+.post-content li.ql-indent-1::before, .review-content li.ql-indent-1::before, .notice-content li.ql-indent-1::before { left: 1.5em; }
+.post-content li.ql-indent-2, .review-content li.ql-indent-2, .notice-content li.ql-indent-2 { padding-left: 4.5em; }
+.post-content li.ql-indent-2::before, .review-content li.ql-indent-2::before, .notice-content li.ql-indent-2::before { left: 3em; }
+
+.post-content a, .review-content a, .notice-content a {
+  color: var(--dd-accent);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.post-content blockquote, .review-content blockquote, .notice-content blockquote {
+  margin: 0.6em 0;
+  padding-left: 16px;
+  border-left: 4px solid var(--dd-accent-soft);
+  color: var(--dd-text-muted);
+}
 .star-filled { color: var(--dd-accent); }
 .star-empty { color: var(--dd-border); }
 

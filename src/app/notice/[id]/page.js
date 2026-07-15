@@ -31,7 +31,7 @@ export default function NoticePostPage({ params }) {
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {formatDate(post.createdAt)}
         </div>
-        <ContentLightbox contentStyle={{ fontSize: 14, lineHeight: 1.8 }}>
+        <ContentLightbox contentClassName="notice-content" contentStyle={{ fontSize: 14, lineHeight: 1.8 }}>
           <div dangerouslySetInnerHTML={dangerousHtml(post.content)} />
         </ContentLightbox>
       </div>

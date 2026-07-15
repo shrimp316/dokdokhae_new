@@ -16,6 +16,7 @@ const ALLOWED_ATTR = [
   'src', 'alt',
   'class',
   'style',
+  'data-list',
 ];
 
 const ALLOWED_STYLE_PROPS = ['color', 'background-color', 'font-size'];

@@ -518,7 +518,7 @@ export default function HomePage() {
                 ✕
               </button>
             </div>
-            <ContentLightbox contentStyle={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+            <ContentLightbox contentClassName="notice-content" contentStyle={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
               <div dangerouslySetInnerHTML={dangerousHtml(pinnedNotice.content)} />
             </ContentLightbox>
             <div style={{ marginTop: 16, textAlign: 'right' }}>
