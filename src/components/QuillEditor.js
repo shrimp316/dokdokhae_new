@@ -74,7 +74,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
         const last = imgs && imgs[imgs.length - 1];
         if (last && !last.classList.contains('img-sm') && !last.classList.contains('img-md') && !last.classList.contains('img-lg')) {
           last.classList.add('img-md');
-          if (onChangeRef.current) onChangeRef.current(quill.root.innerHTML);
+          if (onChangeRef.current) onChangeRef.current(quill.getSemanticHTML());
         }
       });
     } catch (err) {
@@ -186,7 +186,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     menu.img.classList.remove('img-sm', 'img-md', 'img-lg');
     menu.img.classList.add(cls);
     const quill = getQuill();
-    if (quill && onChange) onChange(quill.root.innerHTML);
+    if (quill && onChange) onChange(quill.getSemanticHTML());
     setMenu(null);
   };
 
@@ -194,7 +194,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     if (!menu?.img) return;
     menu.img.parentElement?.removeChild(menu.img);
     const quill = getQuill();
-    if (quill && onChange) onChange(quill.root.innerHTML);
+    if (quill && onChange) onChange(quill.getSemanticHTML());
     setMenu(null);
   };
 

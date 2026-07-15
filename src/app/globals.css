@@ -492,16 +492,27 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 .review-content p:empty { min-height: 1em; }
 
 /* Quill 렌더링 콘텐츠 공통 스타일 — 에디터(.ql-editor) 밖에서도 목록/링크/인용구가 보이도록 */
+/* Quill의 getSemanticHTML()은 순서/글머리 목록을 진짜 <ol>/<ul> 중첩 태그로 내보내므로
+   (data-list 속성 없이 태그 자체로 구분) 브라우저 기본 list-style을 그대로 살려서 쓴다. */
 .post-content ol, .post-content ul,
 .review-content ol, .review-content ul,
 .notice-content ol, .notice-content ul {
   margin: 0 0 0.6em;
-  padding-left: 0;
+  padding-left: 1.5em;
 }
+.post-content ul, .review-content ul, .notice-content ul { list-style: disc; }
+.post-content ol, .review-content ol, .notice-content ol { list-style: decimal; }
 .post-content li, .review-content li, .notice-content li {
+  margin-bottom: 0.2em;
+}
+
+/* 구버전 콘텐츠(quill.root.innerHTML 그대로 저장된 것) 대응 — 이 경우 목록 타입이
+   태그가 아니라 <li data-list="bullet|ordered|checked|unchecked"> 속성으로 표시된다. */
+.post-content li[data-list], .review-content li[data-list], .notice-content li[data-list] {
   list-style: none;
   position: relative;
   padding-left: 1.5em;
+  margin-left: -1.5em;
 }
 .post-content li[data-list]::before,
 .review-content li[data-list]::before,
@@ -516,6 +527,13 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 .notice-content li[data-list="bullet"]::before {
   content: '\2022';
 }
+.post-content li[data-list="checked"]::before, .post-content li[data-list="unchecked"]::before,
+.review-content li[data-list="checked"]::before, .review-content li[data-list="unchecked"]::before,
+.notice-content li[data-list="checked"]::before, .notice-content li[data-list="unchecked"]::before {
+  color: var(--dd-text-muted);
+}
+.post-content li[data-list="checked"]::before, .review-content li[data-list="checked"]::before, .notice-content li[data-list="checked"]::before { content: '\2611'; }
+.post-content li[data-list="unchecked"]::before, .review-content li[data-list="unchecked"]::before, .notice-content li[data-list="unchecked"]::before { content: '\2610'; }
 .post-content ol, .review-content ol, .notice-content ol {
   counter-reset: dd-list-item;
 }
