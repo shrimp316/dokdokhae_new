@@ -394,6 +394,50 @@ textarea { resize: vertical; min-height: 80px; font-family: var(--dd-serif); lin
 }
 .post-card.pinned { border-left-color: var(--dd-accent); }
 
+.post-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dd-border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.post-row:hover { background: var(--dd-accent-soft); }
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.post-grid-card {
+  background: var(--dd-surface);
+  border: 1px solid var(--dd-border);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.post-grid-card:hover { border-color: var(--dd-accent); }
+.post-grid-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--dd-accent-soft);
+  display: block;
+}
+.post-grid-thumb-empty {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--dd-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dd-text-muted);
+  font-family: var(--dd-serif);
+  font-size: 12px;
+}
+
 /* ─────────────────────────────────────────────────────────── */
 /* ── Quill editor                                            ── */
 /* ─────────────────────────────────────────────────────────── */

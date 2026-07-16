@@ -11,6 +11,10 @@ export function stripHtml(html) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+export function extractFirstImage(html) {
+  const m = /<img[^>]+src=["']([^"']+)["']/i.exec(html || '');
+  return m ? m[1] : null;
+}
 export function matchAny(haystacks, needle) {
   const q = (needle || '').trim().toLowerCase();
   if (!q) return true;
