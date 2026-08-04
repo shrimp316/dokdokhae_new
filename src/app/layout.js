@@ -11,11 +11,24 @@ const notoSerif = Noto_Serif_KR({ subsets: ['latin'], weight: ['400', '500', '60
 const notoSans = Noto_Sans_KR({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-sans' });
 
 export const metadata = {
+  metadataBase: new URL('https://dokdokhae.vercel.app'),
   title: '너 참 독독하다',
   description: '우리 독서모임',
   manifest: '/manifest.json',
   icons: {
     apple: '/icon-192.png',
+  },
+  openGraph: {
+    title: '너 참 독독하다',
+    description: '우리 독서모임',
+    siteName: '너 참 독독하다',
+    locale: 'ko_KR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '너 참 독독하다',
+    description: '우리 독서모임',
   },
 };
 
