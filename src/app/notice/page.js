@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { Pin } from 'lucide-react';
 
 export default function NoticePage() {
   const [posts, setPosts] = useState([]);
@@ -23,7 +24,7 @@ export default function NoticePage() {
         posts.map(p => (
           <Link key={p.id} href={`/notice/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className={`post-card ${p.pinned ? 'pinned' : ''}`}>
-              {p.pinned && <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 4 }}>📌 고정</div>}
+              {p.pinned && <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Pin size={11} /> 고정</div>}
               <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{p.title}</div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{formatDate(p.createdAt)}</div>
             </div>

@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
 import ExpandableContent from '@/components/ExpandableContent';
+import { ArrowLeft, Calendar, CalendarDays, ScrollText, PenLine, Bot, MessageCircle, CornerDownRight } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -143,12 +144,12 @@ export default function FeaturedDetailPage({ params }) {
     <div>
       <button onClick={() => router.push('/featured')}
         style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 13, marginBottom: 16, padding: 0 }}>
-        ← 목록으로
+        <ArrowLeft size={14} /> 목록으로
       </button>
 
       {/* 기간 배지 */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
-        {passage.period === 'weekly' ? '📅 이 주의 글' : '📆 이 달의 글'} · {passage.periodKey}
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {passage.period === 'weekly' ? <><Calendar size={11} /> 이 주의 글</> : <><CalendarDays size={11} /> 이 달의 글</>} · {passage.periodKey}
       </div>
 
       {/* 발췌문 / 큐레이터 소개 */}
@@ -164,7 +165,7 @@ export default function FeaturedDetailPage({ params }) {
               </p>
             )}
             <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px' }}>📜 자유 이용</span>
+              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 3 }}><ScrollText size={10} /> 자유 이용</span>
               <p style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>{passage.bookTitle}</p>
               {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
               {passage.sourceUrl && (
@@ -192,8 +193,8 @@ export default function FeaturedDetailPage({ params }) {
               </div>
             )}
             <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px' }}>✍️ 큐레이터 소개</span>
-              {passage.aiGenerated?.curatorNote && <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 6 }}>🤖 AI 큐레이션</span>}
+              <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 3 }}><PenLine size={10} /> 큐레이터 소개</span>
+              {passage.aiGenerated?.curatorNote && <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 6, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Bot size={10} /> AI 큐레이션</span>}
               <p style={{ fontSize: 13, fontWeight: 500, marginTop: 8 }}>{passage.bookTitle}</p>
               {passage.bookAuthor && <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{passage.bookAuthor}</p>}
               <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, fontStyle: 'italic' }}>이 글은 책에 대한 큐레이터의 소개이며, 책의 원문 발췌가 아닙니다.</p>
@@ -223,7 +224,7 @@ export default function FeaturedDetailPage({ params }) {
       {/* 토론 질문 */}
       {passage.questions?.length > 0 && (
         <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 14 }}>💬 함께 나눠볼 질문</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><MessageCircle size={14} /> 함께 나눠볼 질문</h2>
           <ol style={{ paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {passage.questions.map((q, i) => (
               <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -346,7 +347,7 @@ export default function FeaturedDetailPage({ params }) {
               {getReplies(c.id).map(r => (
                 <div key={r.id} className="reply-item">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>↩</span>
+                    <CornerDownRight size={11} style={{ color: 'var(--muted)' }} />
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{r.nickname}</span>
                     {r.isAnonymous && (
                       <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '1px 7px' }}>비회원</span>

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Button, Input, Chip, Tabs, Alert, Card } from '@/components/ui';
+import { Search, AlertTriangle, Lightbulb } from 'lucide-react';
 
 const PREFIX_CHIPS = ['전체', '공지', '후기', '질문', '잡담'];
 
@@ -66,7 +67,7 @@ export default function DesignSystemShowcase() {
             placeholder="검색어를 입력하세요"
             value={input3}
             onChange={(e) => setInput3(e.target.value)}
-            icon={<span aria-label="검색">🔍</span>}
+            icon={<span aria-label="검색"><Search size={16} /></span>}
           />
         </section>
       )}
@@ -97,10 +98,10 @@ export default function DesignSystemShowcase() {
           <Alert variant="default" icon={<span>ℹ️</span>}>
             기본 알림 메시지입니다.
           </Alert>
-          <Alert variant="warning" icon={<span>⚠️</span>}>
+          <Alert variant="warning" icon={<span><AlertTriangle size={16} /></span>}>
             주의 — 좌측 4px primary 보더로 강조됩니다.
           </Alert>
-          <Alert variant="info" icon={<span>💡</span>}>
+          <Alert variant="info" icon={<span><Lightbulb size={16} /></span>}>
             정보 안내 메시지입니다.
           </Alert>
         </section>

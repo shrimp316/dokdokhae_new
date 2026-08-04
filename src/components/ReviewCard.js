@@ -6,6 +6,8 @@ import { stripHtml } from '@/lib/searchUtils';
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
+import LikeBurst from '@/components/LikeBurst';
+import { Star, BookOpen, Heart, MessageCircle } from 'lucide-react';
 
 const PREVIEW_LEN = 30;
 
@@ -28,9 +30,11 @@ export default function ReviewCard({
   const previewText = stripHtml(review.content || '').slice(0, PREVIEW_LEN);
 
   const stars = (n) => (
-    <span style={{ fontSize: 13 }}>
+    <span style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center' }}>
       {[1,2,3,4,5].map(s => (
-        <span key={s} className={s <= (n||0) ? 'star-filled' : 'star-empty'}>★</span>
+        <span key={s} className={s <= (n||0) ? 'star-filled' : 'star-empty'} style={{ display: 'inline-flex' }}>
+          <Star size={13} fill={s <= (n||0) ? 'currentColor' : 'none'} />
+        </span>
       ))}
     </span>
   );
@@ -45,7 +49,7 @@ export default function ReviewCard({
           <span style={{ fontSize:13, fontWeight:600, color:'var(--accent)', whiteSpace:'nowrap' }}>{review.nickname || '익명'}</span>
           {stars(review.rating)}
           {showBookTitle && bookTitle && (
-            <span className="rc-meta rc-meta-book-title">📖 {bookTitle}</span>
+            <span className="rc-meta rc-meta-book-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><BookOpen size={12} /> {bookTitle}</span>
           )}
           {!expanded && previewText && (
             <span className={`rc-meta${showBookTitle ? ' rc-meta-preview-hide-mobile' : ''}`}>
@@ -54,8 +58,8 @@ export default function ReviewCard({
           )}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'var(--muted)' }}>
-          <span>❤ {likeCount}</span>
-          <span>💬 {topComments.length}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><Heart size={12} fill="currentColor" /> {likeCount}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}><MessageCircle size={12} /> {topComments.length}</span>
           <span style={{ fontSize:14 }}>{expanded ? '▾' : '▸'}</span>
         </div>
       </div>
@@ -71,8 +75,9 @@ export default function ReviewCard({
               type="button"
               className="btn-sm btn-outline"
               onClick={(e) => { e.stopPropagation(); if (user) { toggleLike(); } else { alert('로그인이 필요해요.'); } }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
-              {liked ? '❤️' : '🤍'} {likeCount}
+              <LikeBurst liked={liked} likeCount={likeCount} size={14} />
             </button>
             {canModify && (
               <>

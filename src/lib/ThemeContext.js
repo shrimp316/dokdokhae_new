@@ -8,7 +8,7 @@ const MODE_KEY = 'dd-mode';
 const FONT_KEY = 'dd-font';
 const SIDEBAR_KEY = 'dd-sidebar';
 
-const VALID_MODES = ['light', 'sepia', 'dark'];
+const VALID_MODES = ['white', 'light', 'dark'];
 
 function readStored(key, fallback) {
   if (typeof window === 'undefined') return fallback;
@@ -21,8 +21,8 @@ function readStored(key, fallback) {
 }
 
 export function ThemeProvider({ children }) {
-  // Mode (light/sepia/dark)
-  const [mode, setModeState] = useState('sepia');
+  // Mode (white/light/dark)
+  const [mode, setModeState] = useState('white');
   // Body font size (12-18)
   const [fontSize, setFontSizeState] = useState(14);
   // Sidebar open / closed
@@ -32,11 +32,11 @@ export function ThemeProvider({ children }) {
 
   // Hydrate from localStorage once on mount.
   useEffect(() => {
-    const m = readStored(MODE_KEY, 'sepia');
+    const m = readStored(MODE_KEY, 'white');
     const f = parseInt(readStored(FONT_KEY, '14'), 10);
     const s = readStored(SIDEBAR_KEY, null);
 
-    setModeState(VALID_MODES.includes(m) ? m : 'sepia');
+    setModeState(VALID_MODES.includes(m) ? m : 'white');
     setFontSizeState(Number.isFinite(f) && f >= 12 && f <= 18 ? f : 14);
 
     // Viewport-aware default for sidebar: open on desktop, closed on mobile.
@@ -109,7 +109,7 @@ export function useTheme() {
   if (!ctx) {
     // Safe fallback so SSR or out-of-tree consumers don't crash.
     return {
-      mode: 'sepia', setMode: () => {},
+      mode: 'white', setMode: () => {},
       fontSize: 14, setFontSize: () => {},
       isOpen: true, setSidebar: () => {}, toggleSidebar: () => {},
       isMobile: false,

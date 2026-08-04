@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDocs, collection, query, where, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { Library } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,8 +63,8 @@ export default function LoginPage() {
   return (
     <div style={{ maxWidth: 360, margin: '40px auto' }}>
       <div className="card" style={{ padding: '32px 24px' }}>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, color: 'var(--accent)', textAlign: 'center', marginBottom: 24 }}>
-          📚 독독하다
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, color: 'var(--accent)', textAlign: 'center', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Library size={22} /> 독독하다
         </h1>
 
         {/* 탭 */}

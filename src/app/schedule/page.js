@@ -4,6 +4,7 @@ import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/fires
 import { db } from '@/lib/firebase';
 import NoticeBanner from '@/components/NoticeBanner';
 import MonthCalendar from '@/components/MonthCalendar';
+import { BookOpen } from 'lucide-react';
 
 function formatDateTime(str) {
   if (!str) return '';
@@ -91,7 +92,7 @@ export default function SchedulePage() {
                 <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 3 }}>
                   {formatDateTime(m.date)}{m.dateEnd ? ` ~ ${formatDateTime(m.dateEnd)}` : ''}
                 </div>
-                {book && <div style={{ fontSize: 12, color: 'var(--muted)' }}>📖 {book.title}</div>}
+                {book && <div style={{ fontSize: 12, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><BookOpen size={12} /> {book.title}</div>}
                 {m.note && <div style={{ fontSize: 12, color: 'var(--accent2)', marginTop: 4 }}>{m.note}</div>}
               </div>
             </div>

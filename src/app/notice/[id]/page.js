@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
+import { ArrowLeft, Pin } from 'lucide-react';
 
 export default function NoticePostPage({ params }) {
   const { id } = use(params);
@@ -23,10 +24,10 @@ export default function NoticePostPage({ params }) {
   return (
     <div>
       <Link href="/notice" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 13, marginBottom: 16, textDecoration: 'none' }}>
-        ← 목록으로
+        <ArrowLeft size={14} /> 목록으로
       </Link>
       <div className="card" style={{ padding: 20 }}>
-        {post.pinned && <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 6 }}>📌 고정 공지</div>}
+        {post.pinned && <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 6, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Pin size={11} /> 고정 공지</div>}
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{post.title}</h1>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
           {formatDate(post.createdAt)}

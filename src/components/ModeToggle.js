@@ -2,8 +2,8 @@
 import { useTheme } from '@/lib/ThemeContext';
 
 const MODES = [
+  { value: 'white', label: '화이트' },
   { value: 'light', label: '라이트' },
-  { value: 'sepia', label: '세피아' },
   { value: 'dark',  label: '다크' },
 ];
 

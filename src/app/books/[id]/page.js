@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
+import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -107,7 +108,7 @@ export default function BookReviewsPage({ params }) {
     <div>
       {/* 뒤로가기 */}
       <button onClick={() => router.push('/books')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 13, marginBottom: 16, padding: 0 }}>
-        ← 목록으로
+        <ArrowLeft size={14} /> 목록으로
       </button>
 
       {/* 책 정보 */}
@@ -115,7 +116,7 @@ export default function BookReviewsPage({ params }) {
         {book.cover ? (
           <img src={book.cover} alt={book.title} style={{ width: 60, height: 88, objectFit: 'cover', borderRadius: 5, flexShrink: 0, boxShadow: '1px 2px 8px rgba(0,0,0,0.12)' }} />
         ) : (
-          <div style={{ width: 60, height: 88, background: 'var(--tag-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, borderRadius: 5, flexShrink: 0 }}>📚</div>
+          <div style={{ width: 60, height: 88, background: 'var(--tag-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, flexShrink: 0 }}><Library size={24} /></div>
         )}
         <div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{book.title}</h1>
@@ -127,7 +128,7 @@ export default function BookReviewsPage({ params }) {
       {/* 토론 질문 */}
       {questions.length > 0 && (
         <div className="card" style={{ padding: 18, marginBottom: 20 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 14 }}>💬 독서모임 토론 질문</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}><MessageCircle size={14} /> 독서모임 토론 질문</h2>
           <ol style={{ paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {questions.map((q, i) => (
               <li key={q.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -142,13 +143,15 @@ export default function BookReviewsPage({ params }) {
       {/* 감상평 작성 */}
       {user ? (
         <div className="card" style={{ padding: 18, marginBottom: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 500, color: 'var(--muted)', marginBottom: 12 }}>✏️ 감상평 남기기</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 500, color: 'var(--muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Pencil size={14} /> 감상평 남기기</h3>
 
           {/* 별점 */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
             {[1,2,3,4,5].map(n => (
               <button key={n} type="button" onClick={() => setRating(n)}
-                style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', color: n <= rating ? '#f0a500' : 'var(--line)', padding: 0, lineHeight: 1 }}>★</button>
+                style={{ fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', color: n <= rating ? '#f0a500' : 'var(--line)', padding: 0, lineHeight: 1, display: 'inline-flex' }}>
+                <Star size={22} fill={n <= rating ? 'currentColor' : 'none'} />
+              </button>
             ))}
             {rating > 0 && <button onClick={() => setRating(0)} style={{ fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 4 }}>초기화</button>}
           </div>
@@ -165,8 +168,8 @@ export default function BookReviewsPage({ params }) {
           </div>
 
           {draft && (
-            <button onClick={() => { setContent(draft); setDraft(''); }} style={{ fontSize: 12, color: 'var(--accent2)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8, display: 'block' }}>
-              💾 임시저장된 내용 불러오기
+            <button onClick={() => { setContent(draft); setDraft(''); }} style={{ fontSize: 12, color: 'var(--accent2)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Save size={12} /> 임시저장된 내용 불러오기
             </button>
           )}
 
@@ -195,7 +198,9 @@ export default function BookReviewsPage({ params }) {
               <div style={{ marginBottom: 6 }}>
                 {[1,2,3,4,5].map(n => (
                   <button key={n} type="button" onClick={() => setEditRating(n)}
-                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0 }}>★</button>
+                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0, display: 'inline-flex' }}>
+                    <Star size={20} fill={n <= editRating ? 'currentColor' : 'none'} />
+                  </button>
                 ))}
               </div>
               <QuillEditor

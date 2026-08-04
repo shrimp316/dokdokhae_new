@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
 import { bookColors } from '@/lib/bookColors';
+import { Pin, X, ArrowRight } from 'lucide-react';
 
 function formatKDate(str) {
   if (!str) return '';
@@ -247,9 +248,10 @@ export default function HomePage() {
                   color: 'var(--dd-accent)', cursor: 'pointer',
                   fontFamily: 'var(--dd-sans)', fontSize: 12,
                   letterSpacing: '0.08em', borderRadius: 0,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}
               >
-                도서 페이지 →
+                도서 페이지 <ArrowRight size={12} />
               </button>
             )}
           </div>
@@ -293,7 +295,7 @@ export default function HomePage() {
                     textDecoration: 'none',
                   }}
                 >
-                  <span style={{ color: 'var(--dd-text-muted)' }}>다음 모임 → </span>
+                  <span style={{ color: 'var(--dd-text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>다음 모임 <ArrowRight size={12} /></span>
                   {nextMeeting.title || nextMeeting.label || '모임'}
                 </Link>
               </>
@@ -364,7 +366,7 @@ export default function HomePage() {
                 }}
               >
                 <span>— {activePassage.bookTitle}{activePassage.bookAuthor ? ` / ${activePassage.bookAuthor}` : ''}</span>
-                <span>읽기 →</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>읽기 <ArrowRight size={11} /></span>
               </div>
             </article>
           </Link>
@@ -421,7 +423,7 @@ export default function HomePage() {
                 textDecoration: 'none', color: 'inherit',
               }}
             >
-              {n.pinned && <span style={{ color: 'var(--dd-accent)', fontSize: 10 }}>📌</span>}
+              {n.pinned && <Pin size={11} style={{ color: 'var(--dd-accent)' }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -512,10 +514,10 @@ export default function HomePage() {
                 onClick={() => setNoticeOpen(false)}
                 style={{
                   background: 'none', border: 'none', fontSize: 20, cursor: 'pointer',
-                  color: 'var(--dd-text-muted)',
+                  color: 'var(--dd-text-muted)', display: 'flex', alignItems: 'center',
                 }}
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
             <ContentLightbox contentClassName="notice-content" contentStyle={{ fontSize: 14, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
@@ -524,10 +526,10 @@ export default function HomePage() {
             <div style={{ marginTop: 16, textAlign: 'right' }}>
               <Link
                 href={`/notice/${pinnedNotice.id}`}
-                style={{ fontSize: 13, color: 'var(--dd-accent)', textDecoration: 'underline' }}
+                style={{ fontSize: 13, color: 'var(--dd-accent)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 3 }}
                 onClick={() => setNoticeOpen(false)}
               >
-                전체 보기 →
+                전체 보기 <ArrowRight size={13} />
               </Link>
             </div>
           </div>

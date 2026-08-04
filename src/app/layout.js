@@ -28,7 +28,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ko" data-mode="sepia" className={`${notoSerif.variable} ${notoSans.variable}`}>
+    <html lang="ko" data-mode="white" className={`${notoSerif.variable} ${notoSans.variable}`}>
       <body>
         <AuthProvider>
           <ThemeProvider>

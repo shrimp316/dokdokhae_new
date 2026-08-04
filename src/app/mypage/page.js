@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { stripHtml } from '@/lib/searchUtils';
+import { NotebookPen, CornerDownRight } from 'lucide-react';
 
 const COMMENT_PREVIEW_LEN = 60;
 
@@ -116,9 +117,9 @@ export default function MyPage() {
           myComments.map(c => (
             <Link key={c.id} href={commentLink(c)} style={{ textDecoration: 'none', display: 'block' }}>
               <div className="post-card">
-                <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 4 }}>
-                  📝 {c.postTitle || '게시글'}
-                  {c.parentId && <span style={{ marginLeft: 6, color: 'var(--muted)' }}>↩ 대댓글</span>}
+                <div style={{ fontSize: 11, color: 'var(--accent2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <NotebookPen size={11} /> {c.postTitle || '게시글'}
+                  {c.parentId && <span style={{ marginLeft: 6, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 3 }}><CornerDownRight size={11} /> 대댓글</span>}
                 </div>
                 <div style={{ fontSize: 14, color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {stripHtml(c.content).slice(0, COMMENT_PREVIEW_LEN)}{stripHtml(c.content).length > COMMENT_PREVIEW_LEN ? '…' : ''}

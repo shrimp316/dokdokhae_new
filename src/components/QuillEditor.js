@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
+import { Lightbulb } from 'lucide-react';
 
 const SIZE_LIST = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
 
@@ -223,8 +224,9 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
           borderBottom: '1.5px solid var(--line)',
           borderRadius: '0 0 8px 8px',
           background: 'var(--tag-bg)',
+          display: 'flex', alignItems: 'center', gap: 5,
         }}>
-          💡 이미지를 본문에 클릭하면 크기(작게/중간/크게)와 삭제 메뉴가 표시됩니다.
+          <Lightbulb size={12} /> 이미지를 본문에 클릭하면 크기(작게/중간/크게)와 삭제 메뉴가 표시됩니다.
         </div>
       )}
       <input

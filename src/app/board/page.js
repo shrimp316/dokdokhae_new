@@ -10,6 +10,7 @@ import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
 import dynamic from 'next/dynamic';
+import { X, Pencil, Save } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -181,8 +182,8 @@ export default function BoardPage() {
 
       {/* 글쓰기 버튼 */}
       {user ? (
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ marginBottom: 14 }}>
-          {showForm ? '✕ 닫기' : '✏️ 글쓰기'}
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ marginBottom: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          {showForm ? <><X size={14} /> 닫기</> : <><Pencil size={14} /> 글쓰기</>}
         </button>
       ) : (
         <div className="card" style={{ padding: 16, textAlign: 'center', marginBottom: 14 }}>
@@ -195,8 +196,8 @@ export default function BoardPage() {
       {showForm && (
         <div className="card" style={{ padding: 18, marginBottom: 16 }}>
           {draft && (
-            <button onClick={loadDraft} style={{ fontSize: 12, color: 'var(--accent2)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8, display: 'block' }}>
-              💾 임시저장된 내용 불러오기
+            <button onClick={loadDraft} style={{ fontSize: 12, color: 'var(--accent2)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Save size={12} /> 임시저장된 내용 불러오기
             </button>
           )}
           {/* 글머리 */}

@@ -12,6 +12,8 @@ import dynamic from 'next/dynamic';
 import { dangerousHtml } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
+import LikeBurst from '@/components/LikeBurst';
+import { ArrowLeft } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -89,7 +91,7 @@ export default function BoardPostPage({ params }) {
   return (
     <div>
       <Link href="/board" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 13, marginBottom: 16, textDecoration: 'none' }}>
-        ← 목록으로
+        <ArrowLeft size={14} /> 목록으로
       </Link>
 
       {/* 게시글 */}
@@ -139,7 +141,7 @@ export default function BoardPostPage({ params }) {
             {/* 좋아요 + 액션 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 20, paddingTop: 14, borderTop: '1px solid var(--line)' }}>
               <button onClick={handleToggleLike} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: `1.5px solid ${liked ? 'var(--accent2)' : 'var(--line)'}`, borderRadius: 20, background: liked ? '#fff8f0' : 'none', color: liked ? 'var(--accent2)' : 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
-                {liked ? '❤️' : '🤍'} {likeCount}
+                <LikeBurst liked={liked} likeCount={likeCount} size={14} />
               </button>
               <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', border: '1.5px solid var(--line)', borderRadius: 20, background: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
                 공유

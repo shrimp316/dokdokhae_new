@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny } from '@/lib/searchUtils';
 import ReviewCard from '@/components/ReviewCard';
+import { Star } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -100,7 +101,9 @@ export default function ReviewsPage() {
               <div style={{ marginBottom: 6 }}>
                 {[1,2,3,4,5].map(n => (
                   <button key={n} type="button" onClick={() => setEditRating(n)}
-                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0 }}>★</button>
+                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', color: n <= editRating ? '#f0a500' : 'var(--line)', padding: 0, display: 'inline-flex' }}>
+                    <Star size={20} fill={n <= editRating ? 'currentColor' : 'none'} />
+                  </button>
                 ))}
               </div>
               <QuillEditor

@@ -7,6 +7,11 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { stripHtml } from '@/lib/searchUtils';
+import {
+  Lock, Settings, BookOpen, Star, MessageCircle, Bot, NotebookPen, Calendar,
+  Volume2, Tag, Bell, PenLine, ScrollText, Pencil, Lightbulb, Download, Link2,
+  CheckCircle2, Clock, Pin, Megaphone,
+} from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
@@ -555,7 +560,7 @@ export default function AdminPage() {
   if (!user) return (
     <div style={{ maxWidth: 360, margin: '40px auto' }}>
       <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16 }}>🔒 관리자</h2>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Lock size={20} /> 관리자</h2>
         <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 16 }}>로그인이 필요해요.</p>
         <button className="btn-primary" onClick={() => router.push('/login')}>로그인하러 가기</button>
       </div>
@@ -565,25 +570,33 @@ export default function AdminPage() {
   if (!isAdmin) return (
     <div style={{ maxWidth: 360, margin: '40px auto' }}>
       <div className="card" style={{ padding: '32px 24px', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16 }}>🔒 권한 없음</h2>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Lock size={20} /> 권한 없음</h2>
         <p style={{ fontSize: 14, color: 'var(--muted)' }}>관리자 계정으로 로그인해주세요.</p>
       </div>
     </div>
   );
 
-  const TABS = [['books','📖 책'],['questions','💬 토론질문'],['featured','📝 이 주의 글'],['meetings','📅 일정'],['notices','📢 공지'],['prefixes','🏷️ 글머리'],['notifications','🔔 알림']];
+  const TABS = [
+    ['books', <><BookOpen size={13} /> 책</>],
+    ['questions', <><MessageCircle size={13} /> 토론질문</>],
+    ['featured', <><NotebookPen size={13} /> 이 주의 글</>],
+    ['meetings', <><Calendar size={13} /> 일정</>],
+    ['notices', <><Volume2 size={13} /> 공지</>],
+    ['prefixes', <><Tag size={13} /> 글머리</>],
+    ['notifications', <><Bell size={13} /> 알림</>],
+  ];
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)' }}>⚙️ 관리자</h1>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}><Settings size={20} /> 관리자</h1>
       </div>
 
       {/* 탭 */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, overflowX: 'auto' }}>
         {TABS.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            style={{ padding: '8px 14px', border: '1.5px solid var(--line)', borderRadius: 20, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: tab === key ? 'var(--accent)' : 'var(--card)', color: tab === key ? '#fff' : 'var(--muted)', whiteSpace: 'nowrap' }}>
+            style={{ padding: '8px 14px', border: '1.5px solid var(--line)', borderRadius: 20, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: tab === key ? 'var(--accent)' : 'var(--card)', color: tab === key ? '#fff' : 'var(--muted)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             {label}
           </button>
         ))}
@@ -592,7 +605,7 @@ export default function AdminPage() {
       {/* 책 관리 */}
       {tab === 'books' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>📖 책 추가</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><BookOpen size={15} /> 책 추가</h3>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <input placeholder="책 제목으로 검색…" value={bookSearch} onChange={e => setBookSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && searchKakao()} style={{ flex: 1 }} />
@@ -623,7 +636,7 @@ export default function AdminPage() {
           <input placeholder="표지 URL" value={newBook.cover} onChange={e => setNewBook({...newBook, cover: e.target.value})} style={{ marginBottom: 8 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <input type="checkbox" id="featured" checked={newBook.featured} onChange={e => setNewBook({...newBook, featured: e.target.checked})} style={{ width: 'auto' }} />
-            <label htmlFor="featured" style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>⭐ 이 달의 책으로 설정</label>
+            <label htmlFor="featured" style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Star size={13} fill="currentColor" /> 이 달의 책으로 설정</label>
           </div>
           <button className="btn-primary" onClick={addBook}>책 추가</button>
           <div style={{ marginTop: 14 }}>
@@ -632,7 +645,7 @@ export default function AdminPage() {
                 {b.cover && <img src={b.cover} style={{ height: 44, borderRadius: 4 }} />}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 500 }}>{b.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{b.author} {b.featured ? '· ⭐ 이달의 책' : ''}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>{b.author} {b.featured && <>· <Star size={11} fill="currentColor" /> 이달의 책</>}</div>
                 </div>
                 {!b.featured && <button className="btn-sm btn-outline" onClick={() => setFeatured(b.id)}>이달의 책</button>}
                 <button className="btn-sm btn-danger" onClick={() => deleteBook(b.id)}>삭제</button>
@@ -645,7 +658,7 @@ export default function AdminPage() {
       {/* 토론 질문 관리 */}
       {tab === 'questions' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>💬 책 토론 질문 관리</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><MessageCircle size={15} /> 책 토론 질문 관리</h3>
 
           {/* 책 선택 */}
           <select value={selectedBookForQ} onChange={e => { setSelectedBookForQ(e.target.value); loadBookQuestions(e.target.value); setAiQResults([]); }} style={{ marginBottom: 12 }}>
@@ -657,8 +670,8 @@ export default function AdminPage() {
             <>
               {/* AI 질문 생성 */}
               <button className="btn-sm btn-outline" onClick={generateAIQuestions} disabled={aiQLoading}
-                style={{ marginBottom: 12, width: '100%', padding: '10px 0' }}>
-                {aiQLoading ? '🤖 AI가 질문을 생성하고 있어요…' : '🤖 AI 질문 5개 자동 생성'}
+                style={{ marginBottom: 12, width: '100%', padding: '10px 0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Bot size={14} /> {aiQLoading ? 'AI가 질문을 생성하고 있어요…' : 'AI 질문 5개 자동 생성'}
               </button>
 
               {/* AI 결과 */}
@@ -715,13 +728,13 @@ export default function AdminPage() {
       {/* 이 주의 글 관리 */}
       {tab === 'featured' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>📝 이 주/달의 글 등록</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><NotebookPen size={15} /> 이 주/달의 글 등록</h3>
 
           {/* 모드 선택 (3-way) */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-            {[['curator', '✍️ 큐레이터 소개'], ['pd', '📜 원문 발췌'], ['manual', '✏️ 직접 입력']].map(([key, label]) => (
+            {[['curator', <><PenLine size={12} /> 큐레이터 소개</>], ['pd', <><ScrollText size={12} /> 원문 발췌</>], ['manual', <><Pencil size={12} /> 직접 입력</>]].map(([key, label]) => (
               <button key={key} onClick={() => { setPassageMode(key); setNewPassage({ ...INITIAL_PASSAGE, kind: key === 'pd' ? 'public_domain' : 'curator_intro' }); setNewPassageQuestion(''); setPassageKakaoResults([]); setPassageBookSearch(''); setPdSearchResults([]); setPdSearchQuery(''); }}
-                style={{ flex: 1, padding: '9px 0', border: '1.5px solid var(--line)', borderRadius: 8, fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: passageMode === key ? 'var(--accent)' : 'var(--card)', color: passageMode === key ? '#fff' : 'var(--muted)' }}>
+                style={{ flex: 1, padding: '9px 0', border: '1.5px solid var(--line)', borderRadius: 8, fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: passageMode === key ? 'var(--accent)' : 'var(--card)', color: passageMode === key ? '#fff' : 'var(--muted)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 {label}
               </button>
             ))}
@@ -770,8 +783,8 @@ export default function AdminPage() {
                 style={{ marginBottom: 8, minHeight: 60, fontSize: 12, resize: 'vertical' }} />
               {/* AI 생성 버튼 */}
               <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading || !newPassage.bookTitle}
-                style={{ marginBottom: 8, width: '100%' }}>
-                {aiPassageLoading ? '🤖 큐레이터 코멘트 생성 중…' : '🤖 큐레이터 코멘트 + 토론 질문 생성'}
+                style={{ marginBottom: 8, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Bot size={14} /> {aiPassageLoading ? '큐레이터 코멘트 생성 중…' : '큐레이터 코멘트 + 토론 질문 생성'}
               </button>
               {/* 큐레이터 코멘트 */}
               <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>큐레이터 코멘트 (2문단)</p>
@@ -794,8 +807,8 @@ export default function AdminPage() {
           {/* PD 모드 */}
           {passageMode === 'pd' && (
             <>
-              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>
-                💡 Project Gutenberg(저작권 만료 작품)에서 책을 검색합니다. 한국어 작품이 한정적이라 결과가 적을 수 있어요.
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                <Lightbulb size={12} style={{ flexShrink: 0, marginTop: 2 }} /> Project Gutenberg(저작권 만료 작품)에서 책을 검색합니다. 한국어 작품이 한정적이라 결과가 적을 수 있어요.
               </p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <input placeholder="책 제목 검색…" value={pdSearchQuery} onChange={e => setPdSearchQuery(e.target.value)}
@@ -812,13 +825,13 @@ export default function AdminPage() {
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>{(b.authors||[]).join(', ')}</div>
                 </div>
               ))}
-              {pdTextLoading && <p style={{ fontSize: 12, color: 'var(--muted)' }}>📥 본문 가져오는 중…</p>}
+              {pdTextLoading && <p style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> 본문 가져오는 중…</p>}
               {newPassage.bookTitle && (
                 <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 10, marginBottom: 8, fontSize: 13 }}>
                   <strong>{newPassage.bookTitle}</strong>{newPassage.bookAuthor && ` / ${newPassage.bookAuthor}`}
                   {newPassage.sourceUrl && (
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all' }}>
-                      🔗 {newPassage.sourceUrl}
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Link2 size={11} /> {newPassage.sourceUrl}
                     </div>
                   )}
                 </div>
@@ -828,8 +841,8 @@ export default function AdminPage() {
                 onChange={e => setNewPassage({...newPassage, excerpt: e.target.value})}
                 style={{ marginBottom: 8, minHeight: 160, resize: 'vertical' }} />
               <button className="btn-primary" onClick={generateAIPassage} disabled={aiPassageLoading || !newPassage.excerpt}
-                style={{ marginBottom: 8, width: '100%' }}>
-                {aiPassageLoading ? '🤖 토론 질문 생성 중…' : '🤖 토론 질문 + 짧은 큐레이터 코멘트 생성'}
+                style={{ marginBottom: 8, width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Bot size={14} /> {aiPassageLoading ? '토론 질문 생성 중…' : '토론 질문 + 짧은 큐레이터 코멘트 생성'}
               </button>
               {newPassage.curatorNote && (
                 <>
@@ -866,8 +879,8 @@ export default function AdminPage() {
           )}
 
           {/* 관련 질문 (공통) */}
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6, marginTop: 8 }}>
-            관련 질문 (최대 5개){newPassage.aiGeneratedQuestions ? ' — 🤖 AI 생성' : ''}
+          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6, marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+            관련 질문 (최대 5개){newPassage.aiGeneratedQuestions && <> — <Bot size={12} /> AI 생성</>}
           </p>
           {newPassage.questions.map((q, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
@@ -964,15 +977,15 @@ export default function AdminPage() {
                           {p.period === 'weekly' ? '주간' : '월간'}
                         </span>
                         {p.kind === 'public_domain' ? (
-                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>📜 원문</span>
+                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--accent)', borderRadius: 10, padding: '2px 8px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}><ScrollText size={10} /> 원문</span>
                         ) : p.kind === 'curator_intro' ? (
-                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px', flexShrink: 0 }}>✍️ 소개</span>
+                          <span style={{ fontSize: 10, background: 'var(--tag-bg)', color: 'var(--muted)', borderRadius: 10, padding: '2px 8px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 3 }}><PenLine size={10} /> 소개</span>
                         ) : null}
                         <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{p.periodKey}</span>
                         <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.bookTitle}</span>
                         <button className="btn-sm btn-outline" onClick={() => togglePassageActive(p.id, p.isActive)}
-                          style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '' }}>
-                          {p.isActive ? '✅ 노출 중' : '노출'}
+                          style={{ flexShrink: 0, background: p.isActive ? 'var(--accent)' : '', color: p.isActive ? '#fff' : '', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {p.isActive ? <><CheckCircle2 size={12} /> 노출 중</> : '노출'}
                         </button>
                         <button className="btn-sm btn-outline" onClick={() => { setEditingPassageId(p.id); setEditPassage({ bookTitle: p.bookTitle || '', bookAuthor: p.bookAuthor || '', kind: p.kind || 'curator_intro', excerpt: p.excerpt || '', curatorNote: p.curatorNote || '', passage: p.passage || '', questions: p.questions || [], source: p.source || '', sourceType: p.sourceType || 'manual', sourceUrl: p.sourceUrl || '', publicDomain: !!p.publicDomain }); setEditPassageQuestion(''); }} style={{ flexShrink: 0 }}>수정</button>
                         <button className="btn-sm btn-danger" onClick={() => deletePassage(p.id)} style={{ flexShrink: 0 }}>삭제</button>
@@ -981,7 +994,7 @@ export default function AdminPage() {
                         {(() => { const t = p.excerpt || p.curatorNote || p.passage || ''; return t ? `"${t.slice(0, 60)}${t.length > 60 ? '…' : ''}"` : ''; })()}
                       </p>
                       {p.questions?.length > 0 && (
-                        <p style={{ fontSize: 11, color: 'var(--accent)' }}>💬 질문 {p.questions.length}개</p>
+                        <p style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}><MessageCircle size={11} /> 질문 {p.questions.length}개</p>
                       )}
                     </>
                   )}
@@ -995,7 +1008,7 @@ export default function AdminPage() {
       {/* 일정 관리 */}
       {tab === 'meetings' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>📅 일정 추가</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={15} /> 일정 추가</h3>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)' }}>시작</label>
@@ -1029,7 +1042,7 @@ export default function AdminPage() {
       {/* 공지 관리 */}
       {tab === 'notices' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>📢 공지 추가</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><Volume2 size={15} /> 공지 추가</h3>
           <input placeholder="공지 제목" value={newNotice.title} onChange={e => setNewNotice({...newNotice, title: e.target.value})} style={{ marginBottom: 8 }} />
           <div style={{ marginBottom: 8 }}>
             <QuillEditor
@@ -1046,7 +1059,7 @@ export default function AdminPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <input type="checkbox" id="pinned" checked={newNotice.pinned} onChange={e => setNewNotice({...newNotice, pinned: e.target.checked})} style={{ width: 'auto' }} />
-            <label htmlFor="pinned" style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}>📌 홈 상단 고정 공지로 설정</label>
+            <label htmlFor="pinned" style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Pin size={13} /> 홈 상단 고정 공지로 설정</label>
           </div>
           <button className="btn-primary" onClick={addNotice}>공지 등록</button>
 
@@ -1071,7 +1084,7 @@ export default function AdminPage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <input type="checkbox" checked={editNotice.pinned} onChange={e => setEditNotice({...editNotice, pinned: e.target.checked})} style={{ width: 'auto' }} />
-                      <span style={{ fontSize: 13, color: 'var(--muted)' }}>📌 고정</span>
+                      <span style={{ fontSize: 13, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Pin size={13} /> 고정</span>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn-sm btn-outline" onClick={() => setEditingNoticeId(null)}>취소</button>
@@ -1081,7 +1094,7 @@ export default function AdminPage() {
                 ) : (
                   <div style={listItemStyle}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.pinned ? '📌 ' : ''}{n.title}</div>
+                      <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>{n.pinned && <Pin size={12} />}{n.title}</div>
                       <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {stripHtml(n.content).slice(0,40) + '…'}
                       </div>
@@ -1102,7 +1115,7 @@ export default function AdminPage() {
       {/* 글머리 관리 */}
       {tab === 'prefixes' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>🏷️ 자유게시판 글머리 관리</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><Tag size={15} /> 자유게시판 글머리 관리</h3>
           <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <input placeholder="새 글머리 (예: 공략, 질문, 잡담)" value={newPrefix} onChange={e => setNewPrefix(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addPrefix()} style={{ flex: 1 }} />
@@ -1123,7 +1136,7 @@ export default function AdminPage() {
       {/* 알림 관리 */}
       {tab === 'notifications' && (
         <div style={sectionStyle}>
-          <h3 style={h3Style}>🔔 알림 보내기</h3>
+          <h3 style={{ ...h3Style, display: 'flex', alignItems: 'center', gap: 6 }}><Bell size={15} /> 알림 보내기</h3>
           <input placeholder="알림 제목" value={newNotif.title} onChange={e => setNewNotif({...newNotif, title: e.target.value})} style={{ marginBottom: 8 }} />
           <textarea placeholder="알림 내용" value={newNotif.body} onChange={e => setNewNotif({...newNotif, body: e.target.value})} style={{ marginBottom: 8, minHeight: 80 }} />
           <input placeholder="이동할 URL (예: /notice, /board)" value={newNotif.url} onChange={e => setNewNotif({...newNotif, url: e.target.value})} style={{ marginBottom: 8 }} />
@@ -1133,13 +1146,13 @@ export default function AdminPage() {
               onClick={sendNow}
               disabled={sendingNow}
               className="btn-primary"
-              style={{ flex: 1 }}
+              style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              {sendingNow ? '발송 중…' : '📣 지금 바로 발송'}
+              {sendingNow ? '발송 중…' : <><Megaphone size={14} /> 지금 바로 발송</>}
             </button>
           </div>
 
-          <h3 style={{ ...h3Style, marginTop: 8 }}>📅 예약 알림</h3>
+          <h3 style={{ ...h3Style, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={15} /> 예약 알림</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 4 }}>
             <label style={{ fontSize: 11, color: 'var(--muted)' }}>발송 날짜 (해당 날 오전 9시에 발송)</label>
             <input type="date" value={newNotif.date} onChange={e => setNewNotif({...newNotif, date: e.target.value})} style={{ marginBottom: 8 }} />
@@ -1154,8 +1167,8 @@ export default function AdminPage() {
                 <div key={n.id} style={{ ...listItemStyle, opacity: n.sent ? 0.5 : 1 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 500 }}>{n.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                      📅 {n.date} · {n.sent ? '✅ 발송완료' : '⏳ 대기중'}
+                    <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Calendar size={12} /> {n.date} · {n.sent ? <><CheckCircle2 size={12} /> 발송완료</> : <><Clock size={12} /> 대기중</>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{n.body}</div>
                   </div>
