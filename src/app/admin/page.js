@@ -677,10 +677,11 @@ export default function AdminPage() {
               {/* AI 결과 */}
               {aiQResults.length > 0 && (
                 <div style={{ background: 'var(--tag-bg)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>AI가 생성한 질문 — 저장할 항목을 선택해주세요</p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>AI가 생성한 질문 — 필요하면 직접 수정한 뒤 저장해주세요</p>
                   {aiQResults.map((q, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13, flex: 1, lineHeight: 1.6 }}>{q}</span>
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                      <input value={q} onChange={e => setAiQResults(prev => prev.map((qq, j) => j === i ? e.target.value : qq))}
+                        style={{ flex: 1, fontSize: 13, padding: '6px 10px' }} />
                       <button className="btn-sm" style={{ background: 'var(--accent)', color: '#fff', flexShrink: 0 }} onClick={() => saveAIQuestion(q)}>저장</button>
                     </div>
                   ))}
@@ -884,9 +885,11 @@ export default function AdminPage() {
           </p>
           {newPassage.questions.map((q, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{i + 1}.</span>
+              <input value={q} onChange={e => setNewPassage(prev => ({...prev, questions: prev.questions.map((qq, j) => j === i ? e.target.value : qq), aiGeneratedQuestions: false}))}
+                style={{ flex: 1, fontSize: 12, padding: '6px 10px' }} />
               <button onClick={() => setNewPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14, flexShrink: 0 }}>×</button>
             </div>
           ))}
           {newPassage.questions.length < 5 && (
@@ -951,9 +954,11 @@ export default function AdminPage() {
                       <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>질문</p>
                       {editPassage.questions.map((q, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, flex: 1 }}>{i + 1}. {q}</span>
+                          <span style={{ fontSize: 12, color: 'var(--muted)', flexShrink: 0 }}>{i + 1}.</span>
+                          <input value={q} onChange={e => setEditPassage(prev => ({...prev, questions: prev.questions.map((qq, j) => j === i ? e.target.value : qq)}))}
+                            style={{ flex: 1, fontSize: 12, padding: '6px 10px' }} />
                           <button onClick={() => setEditPassage(prev => ({...prev, questions: prev.questions.filter((_, j) => j !== i)}))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14 }}>×</button>
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: 14, flexShrink: 0 }}>×</button>
                         </div>
                       ))}
                       {editPassage.questions.length < 5 && (
