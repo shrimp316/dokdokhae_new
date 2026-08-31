@@ -163,8 +163,8 @@ export default function MyPage() {
         <form onSubmit={saveNickname} style={{ marginBottom: 22 }}>
           <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 5 }}>닉네임</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={12} style={{ flex: 1, minWidth: 0, padding: '10px 11px', border: '1px solid var(--line)', borderRadius: 7, background: 'var(--surface)', color: 'var(--text)' }} />
-            <button type="submit" disabled={nicknameSaving} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>{nicknameSaving ? '저장 중…' : '닉네임 저장'}</button>
+            <input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={12} style={{ flex: '1 1 auto', minWidth: 0, width: 0, padding: '10px 11px', border: '1px solid var(--line)', borderRadius: 7, background: 'var(--surface)', color: 'var(--text)' }} />
+            <button type="submit" disabled={nicknameSaving} className="btn-primary" style={{ flex: '0 0 auto', width: 'auto', maxWidth: 'none', whiteSpace: 'nowrap' }}>{nicknameSaving ? '저장 중…' : '닉네임 저장'}</button>
           </div>
           {nicknameMessage && <div style={{ fontSize: 12, color: nicknameMessage.includes('변경되었습니다') ? 'var(--accent)' : 'var(--danger, #c44)', marginTop: 7 }}>{nicknameMessage}</div>}
         </form>
