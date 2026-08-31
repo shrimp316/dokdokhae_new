@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
-
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  return initializeApp({ credential: cert(serviceAccount) });
-}
+import { getAdminDb, getAdminMessaging } from '@/lib/firebaseAdmin';
 
 async function sendToAll(messaging, db, title, body, url = '/') {
   const snap = await db.collection('fcmTokens').get();
@@ -37,9 +29,8 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    getAdminApp();
-    const db = getFirestore();
-    const messaging = getMessaging();
+    const db = getAdminDb();
+    const messaging = getAdminMessaging();
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     let totalSent = 0;

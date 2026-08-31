@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { useAuth } from '@/lib/AuthContext';
 import app from '@/lib/firebase';
+import { authenticatedFetch } from '@/lib/authenticatedFetch';
 
-function reportDebug(uid, stage, reason, context) {
-  fetch('/api/fcm-debug', {
+function reportDebug(stage, reason, context) {
+  authenticatedFetch('/api/fcm-debug', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uid, stage, reason, context }),
+    body: JSON.stringify({ stage, reason, context }),
   }).catch(() => {});
 }
 
@@ -57,18 +58,19 @@ export function useFCM() {
         serviceWorkerRegistration: sw,
       });
       if (token) {
-        await fetch('/api/fcm-token', {
+        const response = await authenticatedFetch('/api/fcm-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, uid: user.uid }),
+          body: JSON.stringify({ token }),
         });
+        if (!response.ok) throw new Error('FCM token registration failed');
         console.log('FCM 토큰 저장 완료');
       } else {
-        reportDebug(user.uid, 'no-token-returned');
+        reportDebug('no-token-returned');
       }
     } catch (e) {
       console.warn('FCM 토큰 저장 실패:', e);
-      reportDebug(user.uid, 'token-save-failed', e.message, {
+      reportDebug('token-save-failed', e.message, {
         displayMode: typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
           ? 'standalone' : 'browser',
         iosStandalone: typeof navigator.standalone === 'boolean' ? navigator.standalone : null,
@@ -85,7 +87,7 @@ export function useFCM() {
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result !== 'granted') {
-        reportDebug(user.uid, 'permission-denied', result);
+        reportDebug('permission-denied', result);
         return;
       }
       await saveToken();

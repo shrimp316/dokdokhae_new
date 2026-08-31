@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 import { dangerousHtml } from '@/lib/sanitize';
+import { authenticatedFetch } from '@/lib/authenticatedFetch';
 import ContentLightbox from '@/components/ContentLightbox';
 import ExpandableContent from '@/components/ExpandableContent';
 import { ArrowLeft, Calendar, CalendarDays, ScrollText, PenLine, Bot, MessageCircle, CornerDownRight } from 'lucide-react';
@@ -85,7 +86,7 @@ export default function FeaturedDetailPage({ params }) {
       ...(isMember ? {} : { isAnonymous: true }),
       createdAt: serverTimestamp(),
     });
-    fetch('/api/notify', {
+    authenticatedFetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'comment', collectionName: 'featuredPassages', postId: id, commentId: commentRef.id }),

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { authenticatedFetch } from '@/lib/authenticatedFetch';
 
 const AuthContext = createContext(null);
 
@@ -46,7 +47,23 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  const logout = () => signOut(auth);
+  const logout = async () => {
+    let tokenRemovalFailed = false;
+
+    try {
+      const response = await authenticatedFetch('/api/fcm-token', { method: 'DELETE' });
+      if (!response.ok) throw new Error('FCM token removal failed');
+    } catch (error) {
+      tokenRemovalFailed = true;
+      console.error('FCM token removal failed during logout', error);
+    }
+
+    await signOut(auth);
+
+    if (tokenRemovalFailed) {
+      alert('로그아웃되었지만 이 기기의 알림 해제에 실패했습니다. 브라우저 알림 권한을 해제해주세요.');
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, anonymousUser, profile, loading, logout, refreshProfile }}>
