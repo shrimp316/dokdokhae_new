@@ -18,3 +18,16 @@ export async function POST(request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const authResult = await requireAuthenticatedUser(request);
+    if (authResult.response) return authResult.response;
+
+    await getAdminDb().collection('fcmTokens').doc(authResult.user.uid).delete();
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
