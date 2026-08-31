@@ -27,10 +27,14 @@ service cloud.firestore {
     }
 
     // 사용자 프로필
-    match /users/{uid} {
-      allow read: if true;
-      allow create, update: if isOwner(uid);
-      allow delete: if isAdmin();
+match /users/{uid} {
+  allow read: if true;
+  // A client may create its own profile, but cannot assign privileged fields.
+  allow create: if isOwner(uid) && !('role' in request.resource.data);
+  // Profile edits from the client are limited to the nickname field.
+  allow update: if isOwner(uid) &&
+    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname']);
+  allow delete: if isAdmin();
 
       match /drafts/{key} {
         allow read, write: if isOwner(uid);

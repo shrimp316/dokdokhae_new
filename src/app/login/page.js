@@ -9,6 +9,7 @@ import {
 import { doc, setDoc, getDocs, collection, query, where, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Library } from 'lucide-react';
+import PasswordInput from '@/components/PasswordInput';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function LoginPage() {
         {mode === 'login' ? (
           <>
             <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-            <input type="password" placeholder="비밀번호" value={pw} onChange={e => setPw(e.target.value)} style={inputStyle} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+            <PasswordInput placeholder="비밀번호" value={pw} onChange={e => setPw(e.target.value)} style={inputStyle} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
             <button className="btn-primary" onClick={handleLogin} disabled={loading} style={{ marginBottom: 10 }}>
               {loading ? '로그인 중…' : '로그인'}
             </button>
@@ -97,7 +98,7 @@ export default function LoginPage() {
           <>
             <input type="text" placeholder="닉네임 (변경 불가, 최대 12자)" value={nickname} onChange={e => setNickname(e.target.value)} maxLength={12} style={inputStyle} />
             <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
-            <input type="password" placeholder="비밀번호 (6자 이상)" value={pw} onChange={e => setPw(e.target.value)} style={inputStyle} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
+            <PasswordInput placeholder="비밀번호 (6자 이상)" value={pw} onChange={e => setPw(e.target.value)} style={inputStyle} onKeyDown={e => e.key === 'Enter' && handleSignup()} />
             <button className="btn-primary" onClick={handleSignup} disabled={loading}>
               {loading ? '가입 중…' : '가입하기'}
             </button>

@@ -12,6 +12,19 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Profile edits (for example, from My Page) can refresh the cached profile
+  // without requiring a full page reload.
+  const refreshProfile = async (uid = auth.currentUser?.uid) => {
+    if (!uid) {
+      setProfile(null);
+      return null;
+    }
+    const snap = await getDoc(doc(db, 'users', uid));
+    const nextProfile = snap.exists() ? snap.data() : null;
+    setProfile(nextProfile);
+    return nextProfile;
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u && u.isAnonymous) {
@@ -23,8 +36,7 @@ export function AuthProvider({ children }) {
         setAnonymousUser(null);
         setUser(u);
         if (u) {
-          const snap = await getDoc(doc(db, 'users', u.uid));
-          setProfile(snap.exists() ? snap.data() : null);
+          await refreshProfile(u.uid);
         } else {
           setProfile(null);
         }
@@ -37,7 +49,7 @@ export function AuthProvider({ children }) {
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, anonymousUser, profile, loading, logout }}>
+    <AuthContext.Provider value={{ user, anonymousUser, profile, loading, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

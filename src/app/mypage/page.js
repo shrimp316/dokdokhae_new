@@ -1,22 +1,34 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, orderBy, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, collectionGroup, updateDoc } from 'firebase/firestore';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { stripHtml } from '@/lib/searchUtils';
 import { NotebookPen, CornerDownRight } from 'lucide-react';
+import PasswordInput from '@/components/PasswordInput';
 
 const COMMENT_PREVIEW_LEN = 60;
 
 export default function MyPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const router = useRouter();
   const [myPosts, setMyPosts] = useState([]);
   const [myComments, setMyComments] = useState([]);
   const [tab, setTab] = useState('posts');
   const [loading, setLoading] = useState(true);
+  const [nickname, setNickname] = useState('');
+  const [nicknameSaving, setNicknameSaving] = useState(false);
+  const [nicknameMessage, setNicknameMessage] = useState('');
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
+
+  useEffect(() => {
+    setNickname(profile?.nickname || '');
+  }, [profile?.nickname]);
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +71,70 @@ export default function MyPage() {
 
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
 
+  async function saveNickname(e) {
+    e.preventDefault();
+    const nextNickname = nickname.trim();
+    setNicknameMessage('');
+    if (!nextNickname) return setNicknameMessage('닉네임을 입력해주세요.');
+    if (nextNickname.length > 12) return setNicknameMessage('닉네임은 12자 이하로 입력해주세요.');
+    if (nextNickname === profile?.nickname) return setNicknameMessage('변경된 내용이 없습니다.');
+    setNicknameSaving(true);
+    try {
+      const duplicate = await getDocs(query(collection(db, 'users'), where('nickname', '==', nextNickname)));
+      if (duplicate.docs.some((item) => item.id !== user.uid)) {
+        setNicknameMessage('이미 사용 중인 닉네임이에요.');
+        return;
+      }
+      await updateDoc(doc(db, 'users', user.uid), { nickname: nextNickname });
+      await refreshProfile(user.uid);
+      setNicknameMessage('닉네임이 변경되었습니다.');
+    } catch (error) {
+      console.error('닉네임 변경 실패', error);
+      setNicknameMessage('닉네임 변경에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setNicknameSaving(false);
+    }
+  }
+
+  async function changePassword(e) {
+    e.preventDefault();
+    setPasswordMessage('');
+    if (!passwords.current || !passwords.next || !passwords.confirm) return setPasswordMessage('모든 비밀번호를 입력해주세요.');
+    if (passwords.next.length < 6) return setPasswordMessage('새 비밀번호는 6자 이상이어야 합니다.');
+    if (passwords.next !== passwords.confirm) return setPasswordMessage('새 비밀번호가 일치하지 않습니다.');
+    if (!user?.email) return setPasswordMessage('이메일 로그인 계정만 비밀번호를 변경할 수 있습니다.');
+    setPasswordSaving(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, passwords.current);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, passwords.next);
+      setPasswords({ current: '', next: '', confirm: '' });
+      setPasswordMessage('비밀번호가 변경되었습니다.');
+    } catch (error) {
+      console.error('비밀번호 변경 실패', error);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') setPasswordMessage('현재 비밀번호가 올바르지 않습니다.');
+      else if (error.code === 'auth/weak-password') setPasswordMessage('새 비밀번호가 너무 약합니다.');
+      else if (error.code === 'auth/requires-recent-login') setPasswordMessage('보안을 위해 다시 로그인한 후 시도해주세요.');
+      else setPasswordMessage('비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
+  function PasswordField({ name, label }) {
+    return (
+      <label style={{ display: 'block', marginBottom: 10 }}>
+        <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 5 }}>{label}</span>
+        <PasswordInput
+          value={passwords[name]}
+          onChange={(e) => setPasswords((prev) => ({ ...prev, [name]: e.target.value }))}
+          autoComplete={name === 'current' ? 'current-password' : 'new-password'}
+          style={{ width: '100%', padding: '10px 11px', border: '1px solid var(--line)', borderRadius: 7, background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+        />
+      </label>
+    );
+  }
+
   if (!user) return (
     <div>
       <div className="section-title">마이페이지</div>
@@ -80,6 +156,26 @@ export default function MyPage() {
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 700, marginBottom: 2 }}>{profile?.nickname}</div>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>{user.email}</div>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+        <div style={{ fontWeight: 700, marginBottom: 12 }}>계정 설정</div>
+        <form onSubmit={saveNickname} style={{ marginBottom: 22 }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginBottom: 5 }}>닉네임</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={nickname} onChange={(e) => setNickname(e.target.value)} maxLength={12} style={{ flex: 1, minWidth: 0, padding: '10px 11px', border: '1px solid var(--line)', borderRadius: 7, background: 'var(--surface)', color: 'var(--text)' }} />
+            <button type="submit" disabled={nicknameSaving} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>{nicknameSaving ? '저장 중…' : '닉네임 저장'}</button>
+          </div>
+          {nicknameMessage && <div style={{ fontSize: 12, color: nicknameMessage.includes('변경되었습니다') ? 'var(--accent)' : 'var(--danger, #c44)', marginTop: 7 }}>{nicknameMessage}</div>}
+        </form>
+        <form onSubmit={changePassword}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>비밀번호 변경</div>
+          <PasswordField name="current" label="현재 비밀번호" />
+          <PasswordField name="next" label="새 비밀번호" />
+          <PasswordField name="confirm" label="새 비밀번호 확인" />
+          <button type="submit" disabled={passwordSaving} className="btn-primary">{passwordSaving ? '변경 중…' : '비밀번호 변경'}</button>
+          {passwordMessage && <div style={{ fontSize: 12, color: passwordMessage.includes('변경되었습니다') ? 'var(--accent)' : 'var(--danger, #c44)', marginTop: 7 }}>{passwordMessage}</div>}
+        </form>
       </div>
 
       {/* 탭 */}
