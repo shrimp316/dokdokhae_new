@@ -5,13 +5,15 @@ import {
   query, orderBy, addDoc, serverTimestamp, runTransaction,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { authHeaders } from '@/lib/apiAuth';
+import { apiUrl } from '@/lib/apiUrl';
 
 function notify(payload) {
-  fetch('/api/notify', {
+  authHeaders({ 'Content-Type': 'application/json' }).then(headers => fetch(apiUrl('/notify'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
-  }).catch(() => {});
+  })).catch(() => {});
 }
 
 export function useLikes(collectionName, postId, user) {

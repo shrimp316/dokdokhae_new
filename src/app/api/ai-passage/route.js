@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { isAdminUser, verifyRequestUser } from '@/lib/serverAuth';
 
 export async function POST(request) {
   try {
+    const decoded = await verifyRequestUser(request);
+    if (!decoded || !(await isAdminUser(decoded))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -32,8 +35,6 @@ export async function POST(request) {
       );
     }
 
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
 
     let prompt;
     if (kind === 'curator_intro') {
@@ -92,13 +93,10 @@ ${excerpt}
 (세 번째 토론 질문)`;
     }
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].text.trim();
+    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }) });
+    if (!response.ok) throw new Error(`Anthropic API ${response.status}`);
+    const data = await response.json();
+    const text = data.content?.[0]?.text?.trim() || '';
 
     const noteMatch = text.match(/\[코멘트\]\s*([\s\S]*?)(?=\[질문1\]|$)/);
     const q1Match = text.match(/\[질문1\]\s*([\s\S]*?)(?=\[질문2\]|$)/);

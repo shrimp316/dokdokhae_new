@@ -5,30 +5,35 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.88.0",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "isomorphic-dompurify": "^3.12.0",
     "lucide-react": "^1.28.0",
     "motion": "^12.43.0",
-    "next": "16.2.3",
+    "next": "^16.3.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-quill-new": "^3.8.3"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cloudflare": "^4.4.1",
     "eslint": "^9",
-    "eslint-config-next": "16.2.3",
+    "eslint-config-next": "^16.3.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "4.127.1"
   },
   "overrides": {
     "html-encoding-sniffer": "4.0.0"

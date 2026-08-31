@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { useAuth } from '@/lib/AuthContext';
 import app from '@/lib/firebase';
+import { authHeaders } from '@/lib/apiAuth';
+import { apiUrl } from '@/lib/apiUrl';
 
 function reportDebug(uid, stage, reason, context) {
-  fetch('/api/fcm-debug', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uid, stage, reason, context }),
-  }).catch(() => {});
+  authHeaders({ 'Content-Type': 'application/json' }).then(headers => fetch(apiUrl('/fcmDebug'), {
+    method: 'POST', headers, body: JSON.stringify({ uid, stage, reason, context }),
+  })).catch(() => {});
 }
 
 export function useFCM() {
@@ -57,10 +57,10 @@ export function useFCM() {
         serviceWorkerRegistration: sw,
       });
       if (token) {
-        await fetch('/api/fcm-token', {
+        await fetch(apiUrl('/fcmToken'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, uid: user.uid }),
+          headers: await authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ token }),
         });
         console.log('FCM 토큰 저장 완료');
       } else {

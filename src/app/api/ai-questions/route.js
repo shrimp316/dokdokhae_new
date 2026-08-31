@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { isAdminUser, verifyRequestUser } from '@/lib/serverAuth';
 
 export async function POST(request) {
   try {
+    const decoded = await verifyRequestUser(request);
+    if (!decoded || !(await isAdminUser(decoded))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { title, author, description } = await request.json();
     if (!title) return NextResponse.json({ error: '책 제목이 필요합니다.' }, { status: 400 });
 
@@ -13,8 +16,6 @@ export async function POST(request) {
       );
     }
 
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
 
     const prompt = `당신은 독서 토론 전문 퍼실리테이터입니다.
 다음 책에 대한 독서모임 토론 질문 5개를 생성해주세요.
@@ -30,13 +31,10 @@ ${description ? `책 소개: ${description}` : ''}
 - 한국어로 작성
 - 번호나 기호 없이 질문만 한 줄씩 작성 (총 5개, 각 줄에 하나씩)`;
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].text.trim();
+    const response = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }) });
+    if (!response.ok) throw new Error(`Anthropic API ${response.status}`);
+    const data = await response.json();
+    const text = data.content?.[0]?.text?.trim() || '';
     const questions = text.split('\n').map(q => q.trim()).filter(q => q.length > 0).slice(0, 5);
 
     return NextResponse.json({ questions });

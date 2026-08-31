@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+import { authHeaders } from '@/lib/apiAuth';
+import { apiUrl } from '@/lib/apiUrl';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -153,9 +155,9 @@ export default function AdminPage() {
     setAiQLoading(true);
     setAiQResults([]);
     try {
-      const res = await fetch('/api/ai-questions', {
+      const res = await fetch(apiUrl('/aiQuestions'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ title: book.title, author: book.author, description: book.description }),
       });
       const data = await res.json();
@@ -298,9 +300,9 @@ export default function AdminPage() {
     }
     setAiPassageLoading(true);
     try {
-      const res = await fetch('/api/ai-passage', {
+      const res = await fetch(apiUrl('/aiPassage'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           kind,
           bookTitle: newPassage.bookTitle,
@@ -429,9 +431,9 @@ export default function AdminPage() {
     if (!newNotif.title || !newNotif.body) { alert('제목과 내용을 입력해주세요.'); return; }
     setSendingNow(true);
     try {
-      const res = await fetch('/api/send-notification', {
+      const res = await fetch(apiUrl('/sendNotification'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ title: newNotif.title, body: newNotif.body, url: newNotif.url || '/' }),
       });
       const data = await res.json();

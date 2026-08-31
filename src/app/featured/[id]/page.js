@@ -3,6 +3,8 @@ import { useEffect, useState, use } from 'react';
 import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
+import { authHeaders } from '@/lib/apiAuth';
+import { apiUrl } from '@/lib/apiUrl';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -85,11 +87,11 @@ export default function FeaturedDetailPage({ params }) {
       ...(isMember ? {} : { isAnonymous: true }),
       createdAt: serverTimestamp(),
     });
-    fetch('/api/notify', {
+    authHeaders({ 'Content-Type': 'application/json' }).then(headers => fetch(apiUrl('/notify'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ type: 'comment', collectionName: 'featuredPassages', postId: id, commentId: commentRef.id }),
-    }).catch(() => {});
+    })).catch(() => {});
     if (parentId) { setReplyText(''); setReplyTo(null); }
     else setCommentText('');
     loadComments();
