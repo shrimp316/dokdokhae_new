@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { stripHtml } from '@/lib/searchUtils';
+import { authenticatedFetch } from '@/lib/authenticatedFetch';
 import {
   Lock, Settings, BookOpen, Star, MessageCircle, Bot, NotebookPen, Calendar,
   Volume2, Tag, Bell, PenLine, ScrollText, Pencil, Lightbulb, Download, Link2,
@@ -429,12 +430,13 @@ export default function AdminPage() {
     if (!newNotif.title || !newNotif.body) { alert('제목과 내용을 입력해주세요.'); return; }
     setSendingNow(true);
     try {
-      const res = await fetch('/api/send-notification', {
+      const res = await authenticatedFetch('/api/send-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newNotif.title, body: newNotif.body, url: newNotif.url || '/' }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Notification send failed');
       alert(`✅ ${data.sent}명에게 알림을 보냈어요!`);
       setNewNotif({ title: '', body: '', date: '', url: '/' });
     } catch (e) { alert('발송 실패: ' + e.message); }

@@ -5,9 +5,10 @@ import {
   query, orderBy, addDoc, serverTimestamp, runTransaction,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { authenticatedFetch } from '@/lib/authenticatedFetch';
 
 function notify(payload) {
-  fetch('/api/notify', {
+  authenticatedFetch('/api/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -62,7 +63,7 @@ export function useLikes(collectionName, postId, user) {
           tx.update(postRef, { likeCount: current + 1 });
         }
       });
-      if (willLike) notify({ type: 'like', collectionName, postId, actorUid: user.uid });
+      if (willLike) notify({ type: 'like', collectionName, postId });
     } catch (err) {
       console.error('toggleLike failed', err);
       // rollback optimistic UI

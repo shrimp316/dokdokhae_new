@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
+import { FieldValue } from 'firebase-admin/firestore';
 import { stripHtml } from '@/lib/searchUtils';
+import { getAdminDb, getAdminMessaging, requireAuthenticatedUser } from '@/lib/firebaseAdmin';
 
 const PREVIEW_LEN = 60;
 const VALID_COLLECTIONS = ['board', 'reviews', 'featuredPassages'];
-
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  return initializeApp({ credential: cert(serviceAccount) });
-}
 
 function postUrl(collectionName, postId, bookId) {
   if (collectionName === 'board') return `/board/${postId}`;
@@ -73,28 +66,36 @@ async function resolveLike(db, { collectionName, postId, actorUid }) {
 
 export async function POST(request) {
   try {
+    const authResult = await requireAuthenticatedUser(request);
+    if (authResult.response) return authResult.response;
+
     const body = await request.json();
-    const { type, collectionName, postId, commentId, actorUid } = body;
+    const { type, collectionName, postId, commentId } = body;
 
     if (!VALID_COLLECTIONS.includes(collectionName) || !postId) {
       return NextResponse.json({ error: 'invalid collectionName/postId' }, { status: 400 });
     }
 
-    getAdminApp();
-    const db = getFirestore();
+    const db = getAdminDb();
 
     let resolved = null;
     if (type === 'comment') {
       if (!commentId) return NextResponse.json({ error: 'commentId required' }, { status: 400 });
       resolved = await resolveComment(db, { collectionName, postId, commentId });
     } else if (type === 'like') {
-      if (!actorUid) return NextResponse.json({ error: 'actorUid required' }, { status: 400 });
-      resolved = await resolveLike(db, { collectionName, postId, actorUid });
+      resolved = await resolveLike(db, {
+        collectionName,
+        postId,
+        actorUid: authResult.user.uid,
+      });
     } else {
       return NextResponse.json({ error: 'invalid type' }, { status: 400 });
     }
 
     if (!resolved) return NextResponse.json({ success: true, skipped: true });
+    if (resolved.actorUid !== authResult.user.uid) {
+      return NextResponse.json({ error: 'Notification actor mismatch' }, { status: 403 });
+    }
 
     const { recipientUid } = resolved;
     if (!recipientUid || recipientUid === resolved.actorUid) {
@@ -108,10 +109,11 @@ export async function POST(request) {
 
     const notifId = type === 'comment'
       ? commentId
-      : `like_${collectionName}_${postId}_${actorUid}`;
+      : `like_${collectionName}_${postId}_${resolved.actorUid}`;
     const notifRef = db.collection('users').doc(recipientUid)
       .collection('notifications').doc(notifId);
     const existingSnap = await notifRef.get();
+    const shouldSendPush = !existingSnap.exists;
 
     const preview = resolved.content ? stripHtml(resolved.content).slice(0, PREVIEW_LEN) : '';
     const notifData = {
@@ -138,7 +140,7 @@ export async function POST(request) {
         context: { collectionName, postId }, createdAt: FieldValue.serverTimestamp(),
       });
     }
-    if (token) {
+    if (token && shouldSendPush) {
       const url = postUrl(collectionName, postId, resolved.bookId);
       const titleByType = {
         comment: `${resolved.actorNickname}님이 댓글을 남겼어요`,
@@ -147,7 +149,7 @@ export async function POST(request) {
       };
       const title = titleByType[resolved.type];
       try {
-        await getMessaging().send({
+        await getAdminMessaging().send({
           token,
           notification: { title, body: preview || undefined },
           data: { notifId, url },

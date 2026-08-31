@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getMessaging } from 'firebase-admin/messaging';
-
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-  return initializeApp({ credential: cert(serviceAccount) });
-}
+import { getAdminDb, getAdminMessaging, requireAdminUser } from '@/lib/firebaseAdmin';
 
 export async function POST(request) {
   try {
+    const authResult = await requireAdminUser(request);
+    if (authResult.response) return authResult.response;
+
     const { title, body, url = '/' } = await request.json();
     if (!title || !body) return NextResponse.json({ error: 'title, body 필요' }, { status: 400 });
 
-    getAdminApp();
-    const db = getFirestore();
-    const messaging = getMessaging();
+    const db = getAdminDb();
+    const messaging = getAdminMessaging();
 
     // 모든 FCM 토큰 가져오기
     const snap = await db.collection('fcmTokens').get();
