@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:sanitize": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/sanitize.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

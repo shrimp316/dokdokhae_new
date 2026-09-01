@@ -61,7 +61,13 @@ function sanitize(html, report = null) {
   activeSanitizeReport = report;
   try {
     const sanitized = DOMPurify.sanitize(html, SANITIZE_OPTIONS);
-    if (report) report.removedCount = DOMPurify.removed?.length || 0;
+    if (report) {
+      // jsdom reports the synthetic BODY wrapper as removed even when the
+      // submitted HTML fragment is already safe. It is not user content.
+      report.removedCount = (DOMPurify.removed || []).filter((item) => (
+        item.attribute || item.element?.tagName !== 'BODY'
+      )).length;
+    }
     return sanitized;
   } finally {
     activeSanitizeReport = previousReport;
