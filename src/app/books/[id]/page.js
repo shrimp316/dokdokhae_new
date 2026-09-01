@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize';
 import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
@@ -63,10 +64,14 @@ export default function BookReviewsPage({ params }) {
     if (!user) { router.push('/login'); return; }
     if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    const sanitized = sanitizeHtmlForStorage(content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'reviews'), {
-        bookId: id, content, rating,
+        bookId: id, content: sanitized.html, rating,
         nickname: profile.nickname, uid: user.uid,
         createdAt: serverTimestamp(),
       });
@@ -86,18 +91,27 @@ export default function BookReviewsPage({ params }) {
 
   async function handleEdit(reviewId) {
     if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
-    await updateDoc(doc(db, 'reviews', reviewId), { content: editContent, rating: editRating, updatedAt: serverTimestamp() });
+    const sanitized = sanitizeHtmlForStorage(editContent);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
+    await updateDoc(doc(db, 'reviews', reviewId), { content: sanitized.html, rating: editRating, updatedAt: serverTimestamp() });
     setEditingId(null);
     loadReviews();
   }
 
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
+    const sanitized = sanitizeHtmlForStorage(content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 임시저장합니다.');
+    }
     try {
       await setDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`), {
-        bookId: id, content, updatedAt: serverTimestamp(),
+        bookId: id, content: sanitized.html, updatedAt: serverTimestamp(),
       });
-      setDraft(content);
+      setContent(sanitized.html);
+      setDraft(sanitized.html);
       alert('임시저장 완료!');
     } catch (e) { alert('임시저장 실패: ' + e.message); }
   }

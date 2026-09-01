@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml, sanitizeHtmlForStorage } from '@/lib/sanitize';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';
@@ -66,7 +66,11 @@ export default function BoardPostPage({ params }) {
 
   async function handleEdit() {
     if (!editTitle.trim() || !editContent) { alert('제목과 내용을 입력해주세요.'); return; }
-    await updateDoc(doc(db, 'board', id), { title: editTitle, prefix: editPrefix, content: editContent, updatedAt: serverTimestamp() });
+    const sanitized = sanitizeHtmlForStorage(editContent);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
+    await updateDoc(doc(db, 'board', id), { title: editTitle, prefix: editPrefix, content: sanitized.html, updatedAt: serverTimestamp() });
     setEditing(false);
     loadPost();
   }

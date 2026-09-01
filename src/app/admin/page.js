@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { stripHtml } from '@/lib/searchUtils';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize';
 import { authenticatedFetch } from '@/lib/authenticatedFetch';
 import {
   Lock, Settings, BookOpen, Star, MessageCircle, Bot, NotebookPen, Calendar,
@@ -500,12 +501,16 @@ export default function AdminPage() {
   }
 
   async function addNotice() {
+    const sanitized = sanitizeHtmlForStorage(newNotice.content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     if (!newNotice.title || !newNotice.content) { alert('제목과 내용을 입력해주세요.'); return; }
     if (newNotice.pinned) {
       const prev = await getDocs(query(collection(db, 'notices'), where('pinned', '==', true)));
       for (const d of prev.docs) await updateDoc(doc(db, 'notices', d.id), { pinned: false });
     }
-    await addDoc(collection(db, 'notices'), { ...newNotice, createdAt: serverTimestamp() });
+    await addDoc(collection(db, 'notices'), { ...newNotice, content: sanitized.html, createdAt: serverTimestamp() });
     setNewNotice({ title: '', content: '', pinned: false });
     loadNotices();
     alert('공지가 등록되었어요!');
@@ -518,12 +523,16 @@ export default function AdminPage() {
   }
 
   async function saveEditNotice(id) {
+    const sanitized = sanitizeHtmlForStorage(editNotice.content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     if (!editNotice.title || !editNotice.content) { alert('제목과 내용을 입력해주세요.'); return; }
     if (editNotice.pinned) {
       const prev = await getDocs(query(collection(db, 'notices'), where('pinned', '==', true)));
       for (const d of prev.docs) if (d.id !== id) await updateDoc(doc(db, 'notices', d.id), { pinned: false });
     }
-    await updateDoc(doc(db, 'notices', id), { ...editNotice, updatedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'notices', id), { ...editNotice, content: sanitized.html, updatedAt: serverTimestamp() });
     setEditingNoticeId(null);
     loadNotices();
   }

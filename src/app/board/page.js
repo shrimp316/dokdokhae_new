@@ -9,6 +9,7 @@ import Link from 'next/link';
 import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize';
 import dynamic from 'next/dynamic';
 import { X, Pencil, Save } from 'lucide-react';
 
@@ -121,10 +122,14 @@ export default function BoardPage() {
     if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    const sanitized = sanitizeHtmlForStorage(content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'board'), {
-        title: title.trim(), prefix, content,
+        title: title.trim(), prefix, content: sanitized.html,
         nickname: profile.nickname, uid: user.uid,
         createdAt: serverTimestamp(),
       });
@@ -140,11 +145,16 @@ export default function BoardPage() {
 
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
+    const sanitized = sanitizeHtmlForStorage(content);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 임시저장합니다.');
+    }
     try {
       await setDoc(doc(db, 'users', user.uid, 'drafts', 'board'), {
-        title, prefix, content, updatedAt: serverTimestamp(),
+        title, prefix, content: sanitized.html, updatedAt: serverTimestamp(),
       });
-      setDraft({ title, prefix, content });
+      setContent(sanitized.html);
+      setDraft({ title, prefix, content: sanitized.html });
       alert('임시저장 완료!');
     } catch (e) { alert('임시저장 실패: ' + e.message); }
   }

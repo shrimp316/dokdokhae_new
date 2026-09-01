@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny } from '@/lib/searchUtils';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize';
 import ReviewCard from '@/components/ReviewCard';
 import { Star } from 'lucide-react';
 
@@ -57,7 +58,11 @@ export default function ReviewsPage() {
 
   async function handleEdit(reviewId) {
     if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
-    await updateDoc(doc(db, 'reviews', reviewId), { content: editContent, rating: editRating, updatedAt: serverTimestamp() });
+    const sanitized = sanitizeHtmlForStorage(editContent);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
+    await updateDoc(doc(db, 'reviews', reviewId), { content: sanitized.html, rating: editRating, updatedAt: serverTimestamp() });
     setEditingId(null);
     loadReviews();
   }

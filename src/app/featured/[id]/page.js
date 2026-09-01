@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml, sanitizeHtmlForStorage } from '@/lib/sanitize';
 import { authenticatedFetch } from '@/lib/authenticatedFetch';
 import ContentLightbox from '@/components/ContentLightbox';
 import ExpandableContent from '@/components/ExpandableContent';
@@ -77,8 +77,14 @@ export default function FeaturedDetailPage({ params }) {
       }
     }
     const commentUid = isMember ? user.uid : anonymousUser.uid;
+    const sanitized = parentId
+      ? { html: text.trim(), removedUnsafeContent: false }
+      : sanitizeHtmlForStorage(text);
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     const commentRef = await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
-      content: parentId ? text.trim() : text,
+      content: sanitized.html,
       nickname,
       uid: commentUid,
       parentId: parentId || null,
@@ -106,8 +112,14 @@ export default function FeaturedDetailPage({ params }) {
     const target = comments.find(c => c.id === commentId);
     const isRich = target?.isRich || !target?.parentId;
     if (isRich ? isEmptyHtml(editCommentText) : !editCommentText.trim()) return;
+    const sanitized = isRich
+      ? sanitizeHtmlForStorage(editCommentText)
+      : { html: editCommentText.trim(), removedUnsafeContent: false };
+    if (sanitized.removedUnsafeContent) {
+      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    }
     await updateDoc(doc(db, 'featuredPassages', id, 'comments', commentId), {
-      content: editCommentText,
+      content: sanitized.html,
       updatedAt: serverTimestamp(),
     });
     setEditingCommentId(null);
