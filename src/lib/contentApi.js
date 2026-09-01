@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize.server';
 
 export const CONTENT_LIMITS = {
   title: 200,

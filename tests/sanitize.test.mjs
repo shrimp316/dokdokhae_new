@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  dangerousHtml,
   sanitizeHtml,
   sanitizeHtmlForStorage,
-} from '../src/lib/sanitize.js';
+} from '../src/lib/sanitize.server.js';
 
 function assertNoExecutableMarkup(html) {
   assert.doesNotMatch(html, /<(?:script|iframe|object|embed|svg|math|form|input|button|style)\b/i);
@@ -67,10 +66,19 @@ test('keeps only the inline style properties supported by the editor', () => {
 
   const result = sanitizeHtmlForStorage(input);
 
-  assert.match(result.html, /color: rgb\(10, 20, 30\)/);
-  assert.match(result.html, /background-color: #fff/);
-  assert.match(result.html, /font-size: 18px/);
+  assert.match(result.html, /color:\s*rgb\(10, 20, 30\)/);
+  assert.match(result.html, /background-color:\s*#fff/);
+  assert.match(result.html, /font-size:\s*18px/);
   assert.doesNotMatch(result.html, /position|background-image|z-index|javascript:/i);
+  assert.equal(result.removedUnsafeContent, true);
+});
+
+test('rejects unsafe values even on allowed style properties', () => {
+  const input = '<p style="color: expression(alert(1)); background-color: url(javascript:alert(2)); font-size: calc(100vh * 100)">styled</p>';
+  const result = sanitizeHtmlForStorage(input);
+
+  assert.equal(result.html, '<p>styled</p>');
+  assert.doesNotMatch(result.html, /expression|url\s*\(|javascript:|calc\s*\(/i);
   assert.equal(result.removedUnsafeContent, true);
 });
 
@@ -94,7 +102,7 @@ test('preserves representative Quill semantic HTML', () => {
   assert.match(result.html, /<em>기울임<\/em>/);
   assert.match(result.html, /<u>밑줄<\/u>/);
   assert.match(result.html, /<s>취소선<\/s>/);
-  assert.match(result.html, /style="color: rgb\(230, 0, 0\); font-size: 18px"/);
+  assert.match(result.html, /style="color:\s*rgb\(230, 0, 0\);\s*font-size:\s*18px"/);
   assert.match(result.html, /<ol><li>첫 번째<\/li><\/ol>/);
   assert.match(result.html, /<ul><li>글머리표<\/li><\/ul>/);
   assert.match(result.html, /<blockquote>인용문<\/blockquote>/);
@@ -110,7 +118,9 @@ test('does not report changes for safe basic Quill HTML', () => {
   const input = '<h2>제목</h2><p><strong>안전한 본문</strong><br></p><blockquote>인용</blockquote>';
   const result = sanitizeHtmlForStorage(input);
 
-  assert.equal(result.html, input);
+  assert.match(result.html, /<h2>제목<\/h2>/);
+  assert.match(result.html, /<p><strong>안전한 본문<\/strong><br\s*\/><\/p>/);
+  assert.match(result.html, /<blockquote>인용<\/blockquote>/);
   assert.equal(result.removedUnsafeContent, false);
 });
 
@@ -123,10 +133,16 @@ test('sanitization is idempotent', () => {
   assertNoExecutableMarkup(twice);
 });
 
-test('dangerousHtml returns only the sanitized __html value', () => {
-  const result = dangerousHtml('<img src=x onerror="alert(1)"><p>본문</p>');
+test('removes encoded and whitespace-obfuscated executable URLs', () => {
+  const input = [
+    '<a href="jav&#x61;script:alert(1)">encoded link</a>',
+    '<a href="java\nscript:alert(2)">whitespace link</a>',
+    '<img src="&#x6a;avascript:alert(3)" alt="encoded image">',
+  ].join('');
+  const result = sanitizeHtmlForStorage(input);
 
-  assert.deepEqual(Object.keys(result), ['__html']);
-  assert.equal(result.__html, '<img src="x" loading="lazy"><p>본문</p>');
-  assertNoExecutableMarkup(result.__html);
+  assertNoExecutableMarkup(result.html);
+  assert.match(result.html, /encoded link/);
+  assert.match(result.html, /whitespace link/);
+  assert.equal(result.removedUnsafeContent, true);
 });

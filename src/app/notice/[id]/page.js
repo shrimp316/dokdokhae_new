@@ -3,7 +3,7 @@ import { useEffect, useState, use } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize.client';
 import ContentLightbox from '@/components/ContentLightbox';
 import { ArrowLeft, Pin } from 'lucide-react';
 

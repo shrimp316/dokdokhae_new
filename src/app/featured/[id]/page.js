@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize.client';
 import { authenticatedFetch, authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import ContentLightbox from '@/components/ContentLightbox';
 import ExpandableContent from '@/components/ExpandableContent';

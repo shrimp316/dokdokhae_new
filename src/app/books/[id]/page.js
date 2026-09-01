@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useLikes, useComments } from '@/lib/usePostInteractions';
 import { stripHtml } from '@/lib/searchUtils';
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize.client';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';

@@ -9,7 +9,7 @@ import Link from 'next/link';
 import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import dynamic from 'next/dynamic';
 import { X, Pencil, Save } from 'lucide-react';

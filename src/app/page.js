@@ -4,7 +4,7 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize.client';
 import ContentLightbox from '@/components/ContentLightbox';
 import { bookColors } from '@/lib/bookColors';
 import { Pin, X, ArrowRight } from 'lucide-react';

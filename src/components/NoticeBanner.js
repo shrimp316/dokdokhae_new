@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { dangerousHtml } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize.client';
 import { Volume2, X, ArrowRight } from 'lucide-react';
 
 export default function NoticeBanner() {
