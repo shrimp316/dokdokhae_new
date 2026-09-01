@@ -3,8 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 컬렉션 그룹 쿼리 허용 (마이페이지 내 댓글 모아보기용)
-    match /{path=**}/comments/{cid} {
+    // 모든 댓글을 collectionGroup 쿼리로 조회할 수 있도록 허용
+    match /{path=**}/comments/{commentId} {
       allow read: if true;
     }
 
@@ -13,9 +13,13 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == 'admin';
     }
 
     function isOwner(uid) {
@@ -23,120 +27,166 @@ service cloud.firestore {
     }
 
     function onlyLikeCountChanged() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount']);
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly(['likeCount']);
     }
 
     // 사용자 프로필
-match /users/{uid} {
-  allow read: if true;
-  // A client may create its own profile, but cannot assign privileged fields.
-  allow create: if isOwner(uid) && !('role' in request.resource.data);
-  // Profile edits from the client are limited to the nickname field.
-  allow update: if isOwner(uid) &&
-    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nickname']);
-  allow delete: if isAdmin();
+    match /users/{uid} {
+      allow read: if true;
 
-      match /drafts/{key} {
+      // 자신의 프로필만 생성 가능하며 관리자 권한 지정은 금지
+      allow create: if isOwner(uid)
+        && !('role' in request.resource.data);
+
+      // 브라우저에서는 닉네임만 수정 가능
+      allow update: if isOwner(uid)
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['nickname']);
+
+      allow delete: if isAdmin();
+
+      // 사용자 임시저장
+      match /drafts/{draftId} {
         allow read, write: if isOwner(uid);
       }
+
+      // FCM 토큰
       match /fcmTokens/{tokenId} {
         allow read, write: if isOwner(uid);
       }
-      match /notifications/{notifId} {
+
+      // 알림
+      match /notifications/{notificationId} {
         allow read: if isOwner(uid);
+
         allow update: if isOwner(uid)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly(['read']);
       }
     }
 
     // 자유게시판
     match /board/{postId} {
       allow read: if true;
-      allow create: if isSignedIn() &&
-        request.resource.data.uid == request.auth.uid;
-      allow update: if (isOwner(resource.data.uid) || isAdmin())
-        || (isSignedIn() && onlyLikeCountChanged());
-      allow delete: if isOwner(resource.data.uid) || isAdmin();
+
+      // 생성은 Next.js API에서만 수행
+      allow create: if false;
+
+      // 브라우저에서는 좋아요 수만 수정 가능
+      // 게시글 본문 수정은 Next.js API에서 수행
+      allow update: if isSignedIn()
+        && onlyLikeCountChanged();
+
+      // 삭제는 현재 브라우저에서 직접 수행
+      allow delete: if isOwner(resource.data.uid)
+        || isAdmin();
 
       match /likes/{uid} {
         allow read: if true;
         allow create, delete: if isOwner(uid);
       }
-      match /comments/{cid} {
+
+      // 일반 댓글은 React가 문자열로 출력하는 일반 텍스트
+      match /comments/{commentId} {
         allow read: if true;
-        allow create: if isSignedIn() &&
-          request.resource.data.uid == request.auth.uid;
-        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid;
+
+        allow update, delete: if isOwner(resource.data.uid)
+          || isAdmin();
       }
     }
 
-    // 책 목록 (관리자만 작성)
+    // 도서 목록
     match /books/{bookId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // 감상평
+    // 서평
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn() &&
-        request.resource.data.uid == request.auth.uid;
-      allow update: if (isOwner(resource.data.uid) || isAdmin())
-        || (isSignedIn() && onlyLikeCountChanged());
-      allow delete: if isOwner(resource.data.uid) || isAdmin();
+
+      // 생성은 Next.js API에서만 수행
+      allow create: if false;
+
+      // 브라우저에서는 좋아요 수만 수정 가능
+      // 서평 본문 수정은 Next.js API에서 수행
+      allow update: if isSignedIn()
+        && onlyLikeCountChanged();
+
+      // 삭제는 현재 브라우저에서 직접 수행
+      allow delete: if isOwner(resource.data.uid)
+        || isAdmin();
 
       match /likes/{uid} {
         allow read: if true;
         allow create, delete: if isOwner(uid);
       }
-      match /comments/{cid} {
+
+      // 일반 댓글
+      match /comments/{commentId} {
         allow read: if true;
-        allow create: if isSignedIn() &&
-          request.resource.data.uid == request.auth.uid;
-        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid;
+
+        allow update, delete: if isOwner(resource.data.uid)
+          || isAdmin();
       }
     }
 
     // 공지사항
     match /notices/{noticeId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+
+      // 생성 및 수정은 Next.js API에서만 수행
+      allow create, update: if false;
+
+      // 삭제는 현재 관리자 화면에서 직접 수행
+      allow delete: if isAdmin();
     }
 
     // 게시판 말머리
-    match /boardPrefixes/{id} {
+    match /boardPrefixes/{prefixId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     // 토론 질문
-    match /bookQuestions/{id} {
+    match /bookQuestions/{questionId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     // 모임 일정
-    match /meetings/{id} {
+    match /meetings/{meetingId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // 이주의/이달의 발췌문
-    match /featuredPassages/{id} {
+    // 이주의 인상 깊은 문장
+    match /featuredPassages/{passageId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
 
-      match /comments/{cid} {
+      match /comments/{commentId} {
         allow read: if true;
-        allow create: if isSignedIn()
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.nickname is string
-          && request.resource.data.nickname.size() > 0
-          && request.resource.data.nickname.size() <= 20
-          && request.resource.data.content is string
-          && request.resource.data.content.size() > 0
-          && request.resource.data.content.size() <= 5000;
-        allow update, delete: if isOwner(resource.data.uid) || isAdmin();
+
+        // 생성 및 수정은 Next.js API에서만 수행
+        allow create, update: if false;
+
+        // 삭제는 현재 브라우저에서 직접 수행
+        allow delete: if isOwner(resource.data.uid)
+          || isAdmin();
       }
     }
   }
