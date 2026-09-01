@@ -1,14 +1,14 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { db, auth } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml, sanitizeHtmlForStorage } from '@/lib/sanitize';
-import { authenticatedFetch } from '@/lib/authenticatedFetch';
+import { dangerousHtml } from '@/lib/sanitize';
+import { authenticatedFetch, authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import ContentLightbox from '@/components/ContentLightbox';
 import ExpandableContent from '@/components/ExpandableContent';
 import { ArrowLeft, Calendar, CalendarDays, ScrollText, PenLine, Bot, MessageCircle, CornerDownRight } from 'lucide-react';
@@ -76,30 +76,25 @@ export default function FeaturedDetailPage({ params }) {
         return;
       }
     }
-    const commentUid = isMember ? user.uid : anonymousUser.uid;
-    const sanitized = parentId
-      ? { html: text.trim(), removedUnsafeContent: false }
-      : sanitizeHtmlForStorage(text);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    try {
+      const result = await authenticatedJsonFetch(`/api/content/featured/${encodeURIComponent(id)}/comments`, {
+        method: 'POST',
+        body: { content: text, nickname, parentId },
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      authenticatedFetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'comment', collectionName: 'featuredPassages', postId: id, commentId: result.id }),
+      }).catch(() => {});
+      if (parentId) { setReplyText(''); setReplyTo(null); }
+      else setCommentText('');
+      loadComments();
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    const commentRef = await addDoc(collection(db, 'featuredPassages', id, 'comments'), {
-      content: sanitized.html,
-      nickname,
-      uid: commentUid,
-      parentId: parentId || null,
-      isRich: !parentId,
-      ...(isMember ? {} : { isAnonymous: true }),
-      createdAt: serverTimestamp(),
-    });
-    authenticatedFetch('/api/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'comment', collectionName: 'featuredPassages', postId: id, commentId: commentRef.id }),
-    }).catch(() => {});
-    if (parentId) { setReplyText(''); setReplyTo(null); }
-    else setCommentText('');
-    loadComments();
   }
 
   async function deleteComment(commentId) {
@@ -112,18 +107,19 @@ export default function FeaturedDetailPage({ params }) {
     const target = comments.find(c => c.id === commentId);
     const isRich = target?.isRich || !target?.parentId;
     if (isRich ? isEmptyHtml(editCommentText) : !editCommentText.trim()) return;
-    const sanitized = isRich
-      ? sanitizeHtmlForStorage(editCommentText)
-      : { html: editCommentText.trim(), removedUnsafeContent: false };
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    try {
+      const result = await authenticatedJsonFetch(
+        `/api/content/featured/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`,
+        { method: 'PATCH', body: { content: editCommentText } },
+      );
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      setEditingCommentId(null);
+      loadComments();
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    await updateDoc(doc(db, 'featuredPassages', id, 'comments', commentId), {
-      content: sanitized.html,
-      updatedAt: serverTimestamp(),
-    });
-    setEditingCommentId(null);
-    loadComments();
   }
 
   const isAdmin = profile?.role === 'admin';

@@ -7,8 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { stripHtml } from '@/lib/searchUtils';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize';
-import { authenticatedFetch } from '@/lib/authenticatedFetch';
+import { authenticatedFetch, authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import {
   Lock, Settings, BookOpen, Star, MessageCircle, Bot, NotebookPen, Calendar,
   Volume2, Tag, Bell, PenLine, ScrollText, Pencil, Lightbulb, Download, Link2,
@@ -501,19 +500,21 @@ export default function AdminPage() {
   }
 
   async function addNotice() {
-    const sanitized = sanitizeHtmlForStorage(newNotice.content);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
-    }
     if (!newNotice.title || !newNotice.content) { alert('제목과 내용을 입력해주세요.'); return; }
-    if (newNotice.pinned) {
-      const prev = await getDocs(query(collection(db, 'notices'), where('pinned', '==', true)));
-      for (const d of prev.docs) await updateDoc(doc(db, 'notices', d.id), { pinned: false });
+    try {
+      const result = await authenticatedJsonFetch('/api/content/notices', {
+        method: 'POST',
+        body: newNotice,
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      setNewNotice({ title: '', content: '', pinned: false });
+      loadNotices();
+      alert('공지가 등록되었어요!');
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    await addDoc(collection(db, 'notices'), { ...newNotice, content: sanitized.html, createdAt: serverTimestamp() });
-    setNewNotice({ title: '', content: '', pinned: false });
-    loadNotices();
-    alert('공지가 등록되었어요!');
   }
 
   async function deleteNotice(id) {
@@ -523,25 +524,37 @@ export default function AdminPage() {
   }
 
   async function saveEditNotice(id) {
-    const sanitized = sanitizeHtmlForStorage(editNotice.content);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
-    }
     if (!editNotice.title || !editNotice.content) { alert('제목과 내용을 입력해주세요.'); return; }
-    if (editNotice.pinned) {
-      const prev = await getDocs(query(collection(db, 'notices'), where('pinned', '==', true)));
-      for (const d of prev.docs) if (d.id !== id) await updateDoc(doc(db, 'notices', d.id), { pinned: false });
+    try {
+      const result = await authenticatedJsonFetch(`/api/content/notices/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: editNotice,
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      setEditingNoticeId(null);
+      loadNotices();
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    await updateDoc(doc(db, 'notices', id), { ...editNotice, content: sanitized.html, updatedAt: serverTimestamp() });
-    setEditingNoticeId(null);
-    loadNotices();
   }
 
   async function setPinned(id) {
-    const prev = await getDocs(query(collection(db, 'notices'), where('pinned', '==', true)));
-    for (const d of prev.docs) await updateDoc(doc(db, 'notices', d.id), { pinned: false });
-    await updateDoc(doc(db, 'notices', id), { pinned: true });
-    loadNotices();
+    const notice = notices.find(n => n.id === id);
+    if (!notice) return;
+    try {
+      const result = await authenticatedJsonFetch(`/api/content/notices/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: { title: notice.title, content: notice.content, pinned: true },
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      loadNotices();
+    } catch (error) {
+      alert(`고정 실패: ${error.message}`);
+    }
   }
 
   async function addPrefix() {

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc, deleteDoc, updateDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -9,7 +9,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml, sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { dangerousHtml } from '@/lib/sanitize';
+import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';
@@ -66,13 +67,19 @@ export default function BoardPostPage({ params }) {
 
   async function handleEdit() {
     if (!editTitle.trim() || !editContent) { alert('제목과 내용을 입력해주세요.'); return; }
-    const sanitized = sanitizeHtmlForStorage(editContent);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    try {
+      const result = await authenticatedJsonFetch(`/api/content/board/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: { title: editTitle, prefix: editPrefix, content: editContent },
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      setEditing(false);
+      loadPost();
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    await updateDoc(doc(db, 'board', id), { title: editTitle, prefix: editPrefix, content: sanitized.html, updatedAt: serverTimestamp() });
-    setEditing(false);
-    loadPost();
   }
 
   async function handleShare() {

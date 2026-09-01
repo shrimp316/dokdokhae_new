@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny } from '@/lib/searchUtils';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import ReviewCard from '@/components/ReviewCard';
 import { Star } from 'lucide-react';
 
@@ -58,13 +58,19 @@ export default function ReviewsPage() {
 
   async function handleEdit(reviewId) {
     if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
-    const sanitized = sanitizeHtmlForStorage(editContent);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
+    try {
+      const result = await authenticatedJsonFetch(`/api/content/reviews/${encodeURIComponent(reviewId)}`, {
+        method: 'PATCH',
+        body: { content: editContent, rating: editRating },
+      });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
+      setEditingId(null);
+      loadReviews();
+    } catch (error) {
+      alert(`저장 실패: ${error.message}`);
     }
-    await updateDoc(doc(db, 'reviews', reviewId), { content: sanitized.html, rating: editRating, updatedAt: serverTimestamp() });
-    setEditingId(null);
-    loadReviews();
   }
 
   const filtered = reviews.filter(r =>

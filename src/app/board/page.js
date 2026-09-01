@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, orderBy, addDoc, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -10,6 +10,7 @@ import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize';
+import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import dynamic from 'next/dynamic';
 import { X, Pencil, Save } from 'lucide-react';
 
@@ -122,17 +123,15 @@ export default function BoardPage() {
     if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!title.trim()) { alert('제목을 입력해주세요.'); return; }
     if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
-    const sanitized = sanitizeHtmlForStorage(content);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장합니다.');
-    }
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'board'), {
-        title: title.trim(), prefix, content: sanitized.html,
-        nickname: profile.nickname, uid: user.uid,
-        createdAt: serverTimestamp(),
+      const result = await authenticatedJsonFetch('/api/content/board', {
+        method: 'POST',
+        body: { title, prefix, content },
       });
+      if (result.contentWasSanitized) {
+        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+      }
       setTitle(''); setPrefix(''); setContent('');
       setShowForm(false);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
