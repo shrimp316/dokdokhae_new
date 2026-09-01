@@ -1,10 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      'firebasestorage.googleapis.com',
-      'search1.kakaocdn.net',
-      'thumbnail.image.kakao.com',
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/v0/b/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'search1.kakaocdn.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thumbnail.image.kakao.com',
+        pathname: '/**',
+      },
     ],
   },
   turbopack: {},
