@@ -1,16 +1,17 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { boardHref, readBoardState } from '@/lib/boardNavigation';
 import dynamic from 'next/dynamic';
 import { X, Pencil, Save } from 'lucide-react';
 
@@ -34,21 +35,45 @@ function getVisiblePages(current, total) {
 }
 
 export default function BoardPage() {
+  return (
+    <Suspense fallback={<div className="empty-msg">로딩 중…</div>}>
+      <BoardContent />
+    </Suspense>
+  );
+}
+
+function BoardSearchBar({ search, onSubmit }) {
+  const [input, setInput] = useState(search);
+  return (
+    <SearchBar
+      value={input}
+      onChange={setInput}
+      onSubmit={onSubmit}
+      placeholder="제목, 내용, 닉네임, 말머리로 검색…"
+    />
+  );
+}
+
+function BoardContent() {
   const { user, profile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const boardState = readBoardState(searchParams);
+  const { search, prefix: filterPrefix, page: currentPage } = boardState;
   const [posts, setPosts] = useState([]);
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [prefix, setPrefix] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [prefixes, setPrefixes] = useState([]);
-  const [filterPrefix, setFilterPrefix] = useState('');
   const [draft, setDraft] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewModeState] = useState('text');
+
+  function updateBoardState(changes) {
+    // Keep the list's history entry ready for Back without reloading Firestore data.
+    window.history.replaceState(null, '', boardHref({ ...boardState, ...changes }));
+  }
 
   useEffect(() => {
     loadPrefixes();
@@ -79,10 +104,6 @@ export default function BoardPage() {
     run();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterPrefix]);
 
   useEffect(() => {
     if (!user) { setDraft(''); return; }
@@ -137,7 +158,7 @@ export default function BoardPage() {
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
       setDraft('');
       await reloadPosts();
-      setCurrentPage(1);
+      updateBoardState({ page: 1 });
     } catch (e) { alert('저장 실패: ' + e.message); }
     finally { setSubmitting(false); }
   }
@@ -173,7 +194,7 @@ export default function BoardPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 12, padding: '8px 14px', marginBottom: 8 }}>
             <select
               value={filterPrefix}
-              onChange={e => setFilterPrefix(e.target.value)}
+              onChange={e => updateBoardState({ prefix: e.target.value, page: 1 })}
               style={{ border: 'none', background: 'none', outline: 'none', fontSize: 13, color: filterPrefix ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', flexShrink: 0, width: 'auto', padding: 0 }}
             >
               <option value="">전체 말머리</option>
@@ -181,11 +202,10 @@ export default function BoardPage() {
             </select>
           </div>
         )}
-        <SearchBar
-          value={searchInput}
-          onChange={setSearchInput}
-          onSubmit={v => setSearch(v)}
-          placeholder="제목, 내용, 닉네임, 말머리로 검색…"
+        <BoardSearchBar
+          key={search}
+          search={search}
+          onSubmit={value => updateBoardState({ search: value, page: 1 })}
         />
       </div>
 
@@ -271,7 +291,7 @@ export default function BoardPage() {
             <span style={{ width: 44, flexShrink: 0, textAlign: 'right' }}>날짜</span>
           </div>
           {pageItems.map((p, i) => (
-            <Link key={p.id} href={`/board/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <Link key={p.id} href={boardHref({ ...boardState, page: safePage }, p.id)} style={{ textDecoration: 'none', display: 'block' }}>
               <div className="post-row">
                 <span style={{ width: 32, flexShrink: 0, fontSize: 12, color: 'var(--muted)' }}>{filtered.length - (pageStart + i)}</span>
                 <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
@@ -289,7 +309,7 @@ export default function BoardPage() {
           {pageItems.map(p => {
             const thumb = extractFirstImage(p.content);
             return (
-              <Link key={p.id} href={`/board/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+              <Link key={p.id} href={boardHref({ ...boardState, page: safePage }, p.id)} style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="post-grid-card">
                   {thumb ? (
                     <img src={thumb} alt="" className="post-grid-thumb" />
@@ -314,7 +334,7 @@ export default function BoardPage() {
         </div>
       ) : (
         pageItems.map(p => (
-          <Link key={p.id} href={`/board/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+          <Link key={p.id} href={boardHref({ ...boardState, page: safePage }, p.id)} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="post-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 {p.prefix && <span style={{ fontSize: 11, background: 'var(--accent)', color: '#fff', padding: '1px 7px', borderRadius: 10 }}>{p.prefix}</span>}
@@ -333,7 +353,7 @@ export default function BoardPage() {
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 16, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => setCurrentPage(1)}
+            onClick={() => updateBoardState({ page: 1 })}
             disabled={safePage === 1}
             className="btn-sm btn-outline"
             aria-label="첫 페이지"
@@ -341,7 +361,7 @@ export default function BoardPage() {
           >«</button>
           <button
             type="button"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            onClick={() => updateBoardState({ page: Math.max(1, safePage - 1) })}
             disabled={safePage === 1}
             className="btn-sm btn-outline"
             aria-label="이전 페이지"
@@ -351,7 +371,7 @@ export default function BoardPage() {
             <button
               key={n}
               type="button"
-              onClick={() => setCurrentPage(n)}
+              onClick={() => updateBoardState({ page: n })}
               className="btn-sm"
               aria-current={n === safePage ? 'page' : undefined}
               style={{
@@ -365,7 +385,7 @@ export default function BoardPage() {
           ))}
           <button
             type="button"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            onClick={() => updateBoardState({ page: Math.min(totalPages, safePage + 1) })}
             disabled={safePage === totalPages}
             className="btn-sm btn-outline"
             aria-label="다음 페이지"
@@ -373,7 +393,7 @@ export default function BoardPage() {
           >›</button>
           <button
             type="button"
-            onClick={() => setCurrentPage(totalPages)}
+            onClick={() => updateBoardState({ page: totalPages })}
             disabled={safePage === totalPages}
             className="btn-sm btn-outline"
             aria-label="마지막 페이지"

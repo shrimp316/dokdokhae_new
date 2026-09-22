@@ -10,7 +10,8 @@
     "test:sanitize": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/sanitize.test.mjs",
     "test:cover-proxy": "node --import ./tests/support/register-next-server.mjs --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/cover-proxy.test.mjs",
     "test:nicknames": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/nicknames.test.mjs",
-    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames"
+    "test:board-navigation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/board-navigation.test.mjs",
+    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames && npm run test:board-navigation"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

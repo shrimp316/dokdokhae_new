@@ -1,16 +1,17 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { Suspense, useEffect, useState, use } from 'react';
 import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLikes } from '@/lib/usePostInteractions';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
 import { dangerousHtml } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { boardHref, readBoardState } from '@/lib/boardNavigation';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';
@@ -19,9 +20,19 @@ import { ArrowLeft } from 'lucide-react';
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
 export default function BoardPostPage({ params }) {
+  return (
+    <Suspense fallback={<div className="empty-msg">로딩 중…</div>}>
+      <BoardPostContent params={params} />
+    </Suspense>
+  );
+}
+
+function BoardPostContent({ params }) {
   const { id } = use(params);
   const { user, profile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const listHref = boardHref(readBoardState(searchParams));
 
   const [post, setPost] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -39,7 +50,7 @@ export default function BoardPostPage({ params }) {
 
   async function loadPost() {
     const snap = await getDoc(doc(db, 'board', id));
-    if (!snap.exists()) { router.push('/board'); return; }
+    if (!snap.exists()) { router.push(listHref); return; }
     const data = { id: snap.id, ...snap.data() };
     setPost(data);
     setEditTitle(data.title);
@@ -62,7 +73,7 @@ export default function BoardPostPage({ params }) {
   async function handleDelete() {
     if (!confirm('삭제할까요?')) return;
     await deleteDoc(doc(db, 'board', id));
-    router.push('/board');
+    router.push(listHref);
   }
 
   async function handleEdit() {
@@ -101,7 +112,7 @@ export default function BoardPostPage({ params }) {
 
   return (
     <div>
-      <Link href="/board" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 13, marginBottom: 16, textDecoration: 'none' }}>
+      <Link href={listHref} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 13, marginBottom: 16, textDecoration: 'none' }}>
         <ArrowLeft size={14} /> 목록으로
       </Link>
 
