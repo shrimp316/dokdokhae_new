@@ -17,6 +17,7 @@ const SANITIZE_OPTIONS = {
   KEEP_CONTENT: true,
 };
 
+// DOMPurify 훅은 전역에 한 번만 등록되므로, 호출마다의 제거 보고서는 모듈 변수로 전달한다.
 let activeSanitizeReport = null;
 let hooksRegistered = false;
 
@@ -69,6 +70,7 @@ function getPurifier() {
 
 function sanitize(html, report = null) {
   const purifier = getPurifier();
+  // DOMPurify를 쓸 수 없는 환경(SSR)에서는 검증 없이 통과시키지 않고 전부 버린다.
   if (!purifier) {
     if (report) report.removedCount = 1;
     return '';
@@ -79,6 +81,7 @@ function sanitize(html, report = null) {
   try {
     const sanitized = purifier.sanitize(html, SANITIZE_OPTIONS);
     if (report) {
+      // DOMPurify가 스스로 감싼 BODY를 벗겨낸 것은 사용자 내용을 지운 게 아니므로 세지 않는다.
       report.removedCount = (purifier.removed || []).filter((item) => (
         item.attribute || item.element?.tagName !== 'BODY'
       )).length;

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import app from '@/lib/firebase';
 import { authenticatedFetch } from '@/lib/authenticatedFetch';
 
+// 기기별(특히 iOS 홈 화면 앱) 푸시 등록 실패 원인을 서버 로그로 모으기 위한 진단 보고.
 function reportDebug(stage, reason, context) {
   authenticatedFetch('/api/fcm-debug', {
     method: 'POST',
@@ -23,15 +24,15 @@ export function useFCM() {
     }
   }, []);
 
-  // 이미 허용된 상태면 자동으로 토큰 저장
+  // 토큰은 갱신되거나 다른 계정으로 로그인할 수 있으므로, 이미 허용된 기기도 로그인할 때마다 다시 등록한다.
   useEffect(() => {
     if (!user || typeof window === 'undefined') return;
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
     if (Notification.permission === 'granted') saveToken();
   }, [user]);
 
-  // 포그라운드 메시지 리스너는 앱 생애주기당 한 번만 등록 (saveToken이 여러 번
-  // 호출돼도 리스너가 중복 등록되어 알림이 여러 번 뜨는 것을 방지)
+  // 포그라운드 리스너를 saveToken과 분리해 한 번만 등록한다.
+  // saveToken이 여러 번 불려도 같은 알림이 여러 번 뜨지 않게 하려는 것이다.
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     const messaging = getMessaging(app);

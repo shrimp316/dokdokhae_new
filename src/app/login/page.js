@@ -69,7 +69,6 @@ export default function LoginPage() {
           <Library size={22} /> 독독하다
         </h1>
 
-        {/* 탭 */}
         <div className={styles.tabBar}>
           {['login', 'signup'].map(m => (
             <button key={m} onClick={() => { setMode(m); setError(''); setMsg(''); }}

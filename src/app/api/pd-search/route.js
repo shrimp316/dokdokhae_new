@@ -6,6 +6,8 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const proxy = searchParams.get('proxy');
 
+  // 구텐베르크 원문은 CORS 때문에 브라우저가 직접 읽을 수 없어 서버가 대신 가져온다.
+  // 임의 주소를 대신 요청하는 통로가 되지 않도록 구텐베르크 호스트만 허용한다.
   if (proxy) {
     let host;
     try { host = new URL(proxy).hostname; } catch {

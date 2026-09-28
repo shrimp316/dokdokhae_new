@@ -2,6 +2,7 @@ const NAMED_ENTITIES = {
   nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
 };
 
+// 목록 미리보기·검색용 평문. 태그 자리를 공백으로 바꿔 문단 경계의 단어가 붙지 않게 한다.
 export function stripHtml(html) {
   return (html || '')
     .replace(/<[^>]+>/g, ' ')

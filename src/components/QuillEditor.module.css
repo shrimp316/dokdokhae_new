@@ -1,6 +1,4 @@
-/* Note: minHeight (per-call-site prop) and the image menu's
-   left/top (click position) are genuinely dynamic values and stay
-   as inline style — only their static neighbors move here. */
+/* minHeight(호출부마다 다름)와 이미지 메뉴의 left/top(클릭 위치)은 실행 중에 정해지므로 인라인으로 둔다. */
 
 .loadingPlaceholder {
   background: var(--bg);

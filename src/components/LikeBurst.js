@@ -13,9 +13,8 @@ function makeParticles() {
   }));
 }
 
-// Heart + burst renders inside an existing like <button>; it only reacts to
-// `liked` flips that follow a click on itself, so async data loads (already
-// liked on page load) never trigger a spurious burst.
+// 좋아요 버튼 안에 넣는 하트 애니메이션. 직접 누른 뒤의 liked 변화에만 반응해서,
+// 이미 좋아요한 글을 불러올 때(비동기 로드)는 터지지 않게 한다.
 export default function LikeBurst({ liked, likeCount, size = 14 }) {
   const [particles, setParticles] = useState([]);
   const [pulseKey, setPulseKey] = useState(0);

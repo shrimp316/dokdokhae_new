@@ -75,7 +75,7 @@ function NavDropdown({ label, items, withExternal, pathname }) {
     };
   }, [open]);
 
-  // Close after navigating to one of the items.
+  // 항목을 눌러 이동하면 메뉴가 열린 채 남지 않게 한다.
   useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
@@ -225,7 +225,8 @@ export default function Navbar() {
 
   const menuOpen = isMobile && isOpen;
 
-  // Close the mobile panel whenever the route changes.
+  // 모바일 메뉴는 이동할 때만 닫는다. 화면 크기(isMobile) 변화에 반응하면
+  // 데스크톱↔모바일 전환마다 사용자가 저장한 사이드바 상태를 덮어쓴다.
   useEffect(() => {
     if (isMobile) setSidebar(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps

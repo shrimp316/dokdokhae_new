@@ -1,7 +1,4 @@
-/* Note: the content div's clamp style is computed from the
-   `expanded` state and `lines` prop (and merges any caller-supplied
-   `style`), so it stays inline. Only the static toggle button
-   moves here. */
+/* 줄 수 제한 스타일은 expanded·lines와 호출부 style에 따라 달라지므로 인라인으로 둔다. */
 
 .toggleBtn {
   margin-top: 2px;

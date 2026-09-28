@@ -9,6 +9,7 @@ export async function POST(request) {
     const { token } = await request.json();
     if (!token) return NextResponse.json({ error: 'token required' }, { status: 400 });
 
+    // 토큰은 회원당 하나(uid 문서)만 둔다. 그래서 푸시는 마지막으로 등록한 기기로만 간다.
     const db = getAdminDb();
     await db.collection('fcmTokens').doc(authResult.user.uid)
       .set({ token, updatedAt: new Date() }, { merge: true });

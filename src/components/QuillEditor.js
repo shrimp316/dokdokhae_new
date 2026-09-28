@@ -10,7 +10,7 @@ const SIZE_LIST = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px
 const UPLOAD_MIMETYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const SUPPORTED_IMAGE_LABEL = 'JPG, PNG, GIF, WebP';
 
-// 지원하지 않는 형식을 안내하는 메시지 (예: HEIC, SVG, PDF)
+// 아이폰 사진(HEIC)처럼 자주 올리는 형식이 왜 안 되는지 알 수 있게 걸린 형식 이름을 함께 보여준다.
 function unsupportedFileMessage(files) {
   const kinds = [...new Set(files.map((file) => {
     const ext = file.name?.includes('.') ? file.name.split('.').pop() : '';
@@ -34,7 +34,7 @@ function guardUnsupportedFiles(uploader, isUploadEnabled, notify = alert) {
   return () => { uploader.upload = originalUpload; };
 }
 
-// 빈 에디터 정규화: Quill 기본 빈 상태('<p><br></p>')와 ''를 동일하게 취급
+// Quill의 빈 상태('<p><br></p>')와 ''를 같게 봐야 빈 에디터에 불필요한 setContents가 일어나지 않는다.
 const normalizeHtml = (html) => (!html || html === '<p><br></p>') ? '' : html;
 
 export default function QuillEditor({ value, onChange, placeholder, minHeight = 120, onImageUpload }) {
@@ -44,12 +44,10 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
   const containerRef = useRef(null);
   const [menu, setMenu] = useState(null); // { x, y, img }
   const isComposing = useRef(false);
-  // 사용자 입력으로 인한 변경 여부 추적 — true이면 value prop 변경이 자기 자신이 발생시킨 것
+  // 타이핑이 부모 state를 거쳐 value로 되돌아온 것인지 구분해, 그 반향으로 내용을 다시 쓰지 않게 한다.
   const isSelfChange = useRef(false);
-  // onImageUpload/onChange는 페이지에서 인라인 함수로 넘어와 매 렌더마다 참조가 바뀜.
-  // ref로 우회해서 handleImageClick(→modules)이 항상 같은 참조를 유지하도록 함 —
-  // modules 참조가 바뀌면 react-quill-new가 Quill 인스턴스를 통째로 destroy/재생성해서
-  // 타이핑 중(특히 한글 조합 중)에 그 타이밍과 겹치면 자음분리가 발생함.
+  // onImageUpload/onChange는 보통 인라인 함수라 렌더마다 참조가 바뀐다. ref로 받아 modules를 고정한다.
+  // modules가 바뀌면 react-quill-new가 Quill 인스턴스를 다시 만들고, 한글 조합 중에 겹치면 자모가 분리된다.
   const onImageUploadRef = useRef(onImageUpload);
   onImageUploadRef.current = onImageUpload;
   const onChangeRef = useRef(onChange);
@@ -84,7 +82,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     fileInputRef.current?.click();
   }, []);
 
-  // 업로드가 끝난 이미지를 에디터에 넣고 기본 크기(img-md)를 지정한다. 다음 삽입 위치를 반환.
+  // 원본 크기 그대로면 큰 사진이 본문을 덮으므로 기본 크기(img-md)를 붙인다.
+  // 여러 장을 차례로 넣을 수 있게 다음 삽입 위치를 돌려준다.
   const insertUploadedImage = useCallback((quill, url, index) => {
     // 업로드하는 동안 내용이 줄어들었을 수 있으므로 문서 끝을 넘지 않게 한다.
     const at = Math.min(index, Math.max(quill.getLength() - 1, 0));
@@ -168,7 +167,6 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     },
   }), [handleImageClick, uploadDroppedImages]);
 
-  // 붙여넣기·끌어놓기로 들어온 파일이 지원하지 않는 형식이면 안내한다.
   useEffect(() => {
     if (!ReactQuill) return;
     const uploader = getQuill()?.uploader;
@@ -176,7 +174,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     return guardUnsupportedFiles(uploader, () => !!onImageUploadRef.current);
   }, [ReactQuill, getQuill]);
 
-  // iOS 한글 IME 버그 수정: 캡처 단계로 Quill 내부 핸들러보다 먼저 실행
+  // iOS에서 한글 조합 중에 onChange를 부모로 올리면 자모가 분리된다.
+  // 조합 상태를 Quill 내부 핸들러보다 먼저 알 수 있도록 캡처 단계에서 듣는다.
   useEffect(() => {
     if (!ReactQuill) return;
     const quill = getQuill();
@@ -194,8 +193,8 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     };
   }, [ReactQuill, getQuill]);
 
-  // 외부 value 변경 시에만 Quill 내용 업데이트 (guide-1 방식 — 직접 API 호출)
-  // isSelfChange가 true이면 사용자 타이핑이 부모 state를 바꿔 생긴 반향이므로 무시
+  // value를 ReactQuill prop으로 넘기면 타이핑마다 내용을 다시 써서 커서가 튄다.
+  // 그래서 불러온 초안·수정할 글처럼 바깥에서 바뀐 값만 Quill API로 직접 반영한다.
   useEffect(() => {
     if (!ReactQuill) return;
     if (isSelfChange.current) { isSelfChange.current = false; return; }
@@ -208,7 +207,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     quill.setContents(delta, 'api');
   }, [ReactQuill, value, getQuill]);
 
-  // 에디터 내 이미지 클릭 → 플로팅 메뉴
+  // Quill에는 이미지 크기 조절 UI가 없어서, 클릭한 이미지 위에 크기·삭제 메뉴를 직접 띄운다.
   useEffect(() => {
     if (!ReactQuill) return;
     const quill = getQuill();
@@ -253,8 +252,6 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
 
   const handleChange = useCallback((val) => {
     if (isComposing.current) return;
-    // 이 변경은 사용자 입력에서 왔으므로, 부모 state 업데이트가 value prop을 바꿔도
-    // DOM을 다시 건드리지 않도록 표시
     isSelfChange.current = true;
     if (onChange) onChange(val);
   }, [onChange]);

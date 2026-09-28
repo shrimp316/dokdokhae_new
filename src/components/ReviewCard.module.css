@@ -1,6 +1,4 @@
-/* Moved from src/app/globals.css — .rc-meta*, .star-* are only used here.
-   .review-card, .review-content, .btn-sm/.btn-outline/.btn-danger stay
-   global since other pages/components share them. */
+/* .review-card, .review-content, 버튼 클래스는 다른 페이지와 함께 쓰므로 globals.css에 둔다. */
 
 .meta {
   font-size: 12px;
@@ -27,8 +25,6 @@
 .starEmpty {
   color: var(--dd-border);
 }
-
-/* ── Formerly-inline styles ──────────────────────────────────── */
 
 .starsRow {
   font-size: 13px;

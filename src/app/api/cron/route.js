@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getAdminDb, getAdminMessaging } from '@/lib/firebaseAdmin';
 
+// api/send-notification과 같은 로직이다. 토큰을 한 번만 읽도록 고치면서 lib/push.js로 합칠 예정이다.
 async function sendToAll(messaging, db, title, body, url = '/') {
   const snap = await db.collection('fcmTokens').get();
   const tokens = snap.docs.map(d => d.data().token).filter(Boolean);
@@ -50,7 +51,7 @@ export async function GET(request) {
     let totalSent = 0;
     const log = [];
 
-    // 예약 알림
+    // sent·notified 표시를 남겨, cron이 다시 실행되거나 재시도돼도 같은 알림을 두 번 보내지 않는다.
     const scheduledSnap = await db.collection('scheduledNotifications').where('date', '==', todayStr).where('sent', '==', false).get();
     for (const docSnap of scheduledSnap.docs) {
       const n = docSnap.data();
@@ -60,7 +61,7 @@ export async function GET(request) {
       totalSent += sent;
     }
 
-    // 모임 D-1 자동 알림
+    // 모임 전날 자동 알림
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;

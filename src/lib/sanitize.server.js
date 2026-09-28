@@ -60,6 +60,9 @@ const SANITIZE_OPTIONS = {
   transformTags: ATTRIBUTE_TRANSFORMS,
 };
 
+// removedUnsafeContent는 "sanitize 결과 ≠ 입력"으로 판단한다. 원문과 바로 비교하면
+// 직렬화 차이(따옴표, 태그 닫기)나 위의 속성 변환까지 제거로 잡히므로, 전부 허용하되
+// 같은 변환을 거친 입력과 비교해 실제로 걸러낸 내용이 있을 때만 참이 되게 한다.
 const NORMALIZE_OPTIONS = {
   allowedTags: false,
   allowedAttributes: false,

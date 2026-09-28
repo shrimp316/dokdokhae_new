@@ -1,4 +1,3 @@
-/* Moved from src/app/globals.css — .header is only used here */
 .header {
   background: var(--dd-bg);
   border-bottom: 1px solid var(--dd-border);

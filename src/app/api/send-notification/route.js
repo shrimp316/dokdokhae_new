@@ -12,7 +12,6 @@ export async function POST(request) {
     const db = getAdminDb();
     const messaging = getAdminMessaging();
 
-    // 모든 FCM 토큰 가져오기
     const snap = await db.collection('fcmTokens').get();
     const tokens = snap.docs.map(d => d.data().token).filter(Boolean);
 
@@ -20,7 +19,6 @@ export async function POST(request) {
       return NextResponse.json({ success: true, sent: 0, message: '등록된 토큰 없음' });
     }
 
-    // 멀티캐스트 발송
     const result = await messaging.sendEachForMulticast({
       tokens,
       notification: { title, body },
@@ -30,7 +28,7 @@ export async function POST(request) {
       },
     });
 
-    // 실패한 토큰 정리
+    // 실패한 토큰은 대개 앱 삭제나 권한 해제로 만료된 것이라, 다음 발송에서 또 실패하지 않게 지운다.
     const failedTokens = [];
     result.responses.forEach((resp, i) => {
       if (!resp.success) failedTokens.push(tokens[i]);

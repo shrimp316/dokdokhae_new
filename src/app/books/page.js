@@ -17,7 +17,7 @@ export default function BooksPage() {
         if (cancelled) return;
         setBooks(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch {
-        // empty list
+        // 불러오지 못하면 빈 서가로 둔다.
       }
     })();
     return () => { cancelled = true; };

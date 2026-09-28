@@ -18,6 +18,7 @@ const ICON_BY_TYPE = {
   like: Heart,
 };
 
+// 감상평은 단독 페이지가 없어 해당 책 페이지로 보낸다.
 function notifUrl(n) {
   if (n.collectionName === 'board') return `/board/${n.postId}`;
   if (n.collectionName === 'reviews') return `/books/${n.bookId}`;

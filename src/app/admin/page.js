@@ -90,6 +90,7 @@ export default function AdminPage() {
   const [pdSearchLoading, setPdSearchLoading] = useState(false);
   const [pdTextLoading, setPdTextLoading] = useState(false);
 
+  // 지금은 탭을 바꿀 때마다 모든 컬렉션을 다시 읽는다. 탭을 컴포넌트로 나눌 때 탭별로 필요한 것만 읽도록 바꾼다.
   useEffect(() => {
     if (isAdmin) { loadAll(); }
   }, [isAdmin, tab]);
@@ -199,7 +200,7 @@ export default function AdminPage() {
     if (period === 'monthly') {
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }
-    // ISO week number
+    // 주간 글은 ISO 주차로 묶는다. 연말·연초에 걸친 주도 한 주로 셀 수 있다.
     const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -219,6 +220,7 @@ export default function AdminPage() {
       alert('직접 인용을 사용할 때는 출처(텍스트) 또는 출처 URL이 필요합니다.'); return;
     }
     const periodKey = getPeriodKey(newPassage.period);
+    // passage는 kind가 생기기 전 형식의 필드다. 예전 화면도 내용을 보여줄 수 있게 대표 텍스트를 계속 채운다.
     const passageBackcompat = newPassage.excerpt?.trim() || newPassage.curatorNote?.trim() || '';
     await addDoc(collection(db, 'featuredPassages'), {
       kind,
@@ -257,6 +259,8 @@ export default function AdminPage() {
     loadPassages();
   }
 
+  // 노출 중인 글은 하나뿐이어야 한다. 지금은 하나씩 갱신해서 중간에 실패하면 0개나 2개가 될 수 있으므로
+  // writeBatch로 한 번에 커밋하도록 바꿀 예정이다. (setFeatured·addBook도 같다)
   async function togglePassageActive(id, currentActive) {
     if (!currentActive) {
       const prev = await getDocs(query(collection(db, 'featuredPassages'), where('isActive', '==', true)));
@@ -395,6 +399,7 @@ export default function AdminPage() {
         const res = await fetch(`/api/pd-search?proxy=${encodeURIComponent(b.formats[txtKey])}`);
         if (res.ok) {
           const text = await res.text();
+          // 구텐베르크 텍스트 앞뒤의 라이선스 머리말·꼬리말을 떼고 본문만 발췌 후보로 쓴다.
           const start = text.indexOf('*** START');
           const end = text.indexOf('*** END');
           let body = text;
@@ -453,7 +458,8 @@ export default function AdminPage() {
     setSendingNow(false);
   }
 
-  // 책 검색 (카카오)
+  // 카카오 검색은 브라우저에서 바로 호출해 API 키가 노출된다. pd-search처럼 서버 라우트로 옮기면서
+  // searchKakaoForPassage와 하나로 합칠 예정이다.
   async function searchKakao() {
     if (!bookSearch.trim()) return;
     try {
@@ -622,7 +628,6 @@ export default function AdminPage() {
         <h1 className={styles.pageTitle}><Settings size={20} /> 관리자</h1>
       </div>
 
-      {/* 탭 */}
       <div className={styles.tabBar}>
         {TABS.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
@@ -632,7 +637,6 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* 책 관리 */}
       {tab === 'books' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><BookOpen size={15} /> 책 추가</h3>
@@ -683,12 +687,10 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 토론 질문 관리 */}
       {tab === 'questions' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><MessageCircle size={15} /> 책 토론 질문 관리</h3>
 
-          {/* 책 선택 */}
           <select value={selectedBookForQ} onChange={e => { setSelectedBookForQ(e.target.value); loadBookQuestions(e.target.value); setAiQResults([]); }} className={styles.fieldGapLg}>
             <option value="">책을 선택하세요</option>
             {books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
@@ -696,13 +698,11 @@ export default function AdminPage() {
 
           {selectedBookForQ && (
             <>
-              {/* AI 질문 생성 */}
               <button onClick={generateAIQuestions} disabled={aiQLoading}
                 className={`btn-sm btn-outline ${styles.aiGenerateBtn} ${styles.mb12}`}>
                 <Bot size={14} /> {aiQLoading ? 'AI가 질문을 생성하고 있어요…' : 'AI 질문 5개 자동 생성'}
               </button>
 
-              {/* AI 결과 */}
               {aiQResults.length > 0 && (
                 <div className={styles.aiResultBox}>
                   <p className={`${styles.helperText} ${styles.mb8}`}>AI가 생성한 질문 — 필요하면 직접 수정한 뒤 저장해주세요</p>
@@ -716,14 +716,12 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* 직접 입력 */}
               <div className={`${styles.rowBase} ${styles.mb12}`}>
                 <input placeholder="질문을 직접 입력하세요" value={newQuestion} onChange={e => setNewQuestion(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addQuestion()} className={styles.flex1} />
                 <button className={`btn-sm ${styles.accentBtnShrink}`} onClick={addQuestion}>추가</button>
               </div>
 
-              {/* 등록된 질문 목록 */}
               <div>
                 {bookQuestions.length === 0 ? (
                   <p className={styles.mutedSmall}>등록된 질문이 없어요.</p>
@@ -754,12 +752,10 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 이 주의 글 관리 */}
       {tab === 'featured' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><NotebookPen size={15} /> 이 주/달의 글 등록</h3>
 
-          {/* 모드 선택 (3-way) */}
           <div className={styles.modeRow}>
             {[['curator', <><PenLine size={12} /> 큐레이터 소개</>], ['pd', <><ScrollText size={12} /> 원문 발췌</>], ['manual', <><Pencil size={12} /> 직접 입력</>]].map(([key, label]) => (
               <button key={key} onClick={() => { setPassageMode(key); setNewPassage({ ...INITIAL_PASSAGE, kind: key === 'pd' ? 'public_domain' : 'curator_intro' }); setNewPassageQuestion(''); setPassageKakaoResults([]); setPassageBookSearch(''); setPdSearchResults([]); setPdSearchQuery(''); }}
@@ -769,21 +765,17 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {/* 주간/월간 선택 (공통) */}
           <select value={newPassage.period} onChange={e => setNewPassage({...newPassage, period: e.target.value})} className={styles.fieldGapLg}>
             <option value="weekly">📅 주간</option>
             <option value="monthly">📆 월간</option>
           </select>
 
-          {/* Curator 모드 */}
           {passageMode === 'curator' && (
             <>
-              {/* 책 선택 — 시스템 내 books */}
               <select value={newPassage.bookId} onChange={e => selectPassageBookFromCollection(e.target.value)} className={styles.fieldGap}>
                 <option value="">시스템 내 책에서 선택</option>
                 {books.map(b => <option key={b.id} value={b.id}>{b.title}{b.author ? ` / ${b.author}` : ''}</option>)}
               </select>
-              {/* 또는 카카오 검색 */}
               <div className={`${styles.rowBase} ${styles.mb8}`}>
                 <input placeholder="또는 책 제목으로 검색…" value={passageBookSearch} onChange={e => setPassageBookSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchKakaoForPassage()} className={styles.flex1} />
@@ -798,26 +790,21 @@ export default function AdminPage() {
                   </div>
                 </div>
               ))}
-              {/* 선택된 책 표시 */}
               {newPassage.bookTitle && (
                 <div className={styles.selectedPreviewBlock}>
                   <strong>{newPassage.bookTitle}</strong>{newPassage.bookAuthor && ` / ${newPassage.bookAuthor}`}
                 </div>
               )}
-              {/* 책 소개 (AI 컨텍스트) */}
               <textarea placeholder="책 소개 (AI 컨텍스트로 사용, 자동 채워짐)" value={newPassage.bookDescription}
                 onChange={e => setNewPassage({...newPassage, bookDescription: e.target.value})}
                 className={styles.textareaH60Sm} />
-              {/* AI 생성 버튼 */}
               <button className={`btn-primary ${styles.aiGenerateBtnNoPad} ${styles.mb8}`} onClick={generateAIPassage} disabled={aiPassageLoading || !newPassage.bookTitle}>
                 <Bot size={14} /> {aiPassageLoading ? '큐레이터 코멘트 생성 중…' : '큐레이터 코멘트 + 토론 질문 생성'}
               </button>
-              {/* 큐레이터 코멘트 */}
               <p className={styles.helperText}>큐레이터 코멘트 (2문단)</p>
               <textarea value={newPassage.curatorNote}
                 onChange={e => setNewPassage({...newPassage, curatorNote: e.target.value, aiGeneratedNote: false})}
                 className={styles.textareaH120} />
-              {/* 짧은 직접 인용 (선택) */}
               <p className={styles.helperText}>짧은 직접 인용 (1~2문장, 선택) — 입력 시 출처 필수</p>
               <textarea placeholder='예: "이 책에서 작가는 ... 라고 썼다." (큰따옴표 없이 본문만)' value={newPassage.excerpt}
                 onChange={e => setNewPassage({...newPassage, excerpt: e.target.value})}
@@ -830,7 +817,6 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* PD 모드 */}
           {passageMode === 'pd' && (
             <>
               <p className={styles.pdInfoText}>
@@ -878,7 +864,6 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* Manual 모드 */}
           {passageMode === 'manual' && (
             <>
               <div className={`${styles.rowBase} ${styles.mb8}`}>
@@ -901,7 +886,6 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* 관련 질문 (공통) */}
           <p className={styles.relatedQuestionsLabel}>
             관련 질문 (최대 5개){newPassage.aiGeneratedQuestions && <> — <Bot size={12} /> AI 생성</>}
           </p>
@@ -932,7 +916,6 @@ export default function AdminPage() {
 
           <button className={`btn-primary ${styles.mt12}`} onClick={addPassage}>등록</button>
 
-          {/* 등록된 목록 */}
           <div className={styles.mt20}>
             <p className={styles.registeredListLabel}>등록된 발췌문</p>
             {passages.length === 0 ? (
@@ -941,7 +924,6 @@ export default function AdminPage() {
               passages.map(p => (
                 <div key={p.id} className={`${styles.listItem} ${styles.listItemColumn}`}>
                   {editingPassageId === p.id ? (
-                    /* 수정 폼 */
                     <div className={styles.editFormWrap}>
                       <select value={editPassage.kind} onChange={e => setEditPassage({...editPassage, kind: e.target.value, publicDomain: e.target.value === 'public_domain'})} className={styles.fieldGap}>
                         <option value="curator_intro">✍️ 큐레이터 소개</option>
@@ -972,7 +954,6 @@ export default function AdminPage() {
                       )}
                       <input placeholder="출처 (선택, 인용 시 필수)" value={editPassage.source} onChange={e => setEditPassage({...editPassage, source: e.target.value})} className={styles.fieldGap} />
                       <input placeholder="출처 URL (선택)" value={editPassage.sourceUrl} onChange={e => setEditPassage({...editPassage, sourceUrl: e.target.value})} className={styles.fieldGap} />
-                      {/* 질문 수정 */}
                       <p className={styles.helperText}>질문</p>
                       {editPassage.questions.map((q, i) => (
                         <div key={i} className={styles.numberedRow}>
@@ -997,7 +978,6 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ) : (
-                    /* 목록 뷰 */
                     <>
                       <div className={styles.passageRowHead}>
                         <span className={styles.passageBadge} data-weekly={p.period === 'weekly' || undefined}>
@@ -1032,7 +1012,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 일정 관리 */}
       {tab === 'meetings' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><Calendar size={15} /> 일정 추가</h3>
@@ -1066,7 +1045,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 공지 관리 */}
       {tab === 'notices' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><Volume2 size={15} /> 공지 추가</h3>
@@ -1139,7 +1117,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 글머리 관리 */}
       {tab === 'prefixes' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><Tag size={15} /> 자유게시판 글머리 관리</h3>
@@ -1160,7 +1137,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 알림 관리 */}
       {tab === 'notifications' && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}><Bell size={15} /> 알림 보내기</h3>

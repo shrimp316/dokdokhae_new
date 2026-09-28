@@ -21,16 +21,12 @@ function readStored(key, fallback) {
 }
 
 export function ThemeProvider({ children }) {
-  // Mode (white/light/dark)
   const [mode, setModeState] = useState('white');
-  // Body font size (12-18)
   const [fontSize, setFontSizeState] = useState(14);
-  // Sidebar open / closed
   const [isOpen, setIsOpen] = useState(true);
-  // Viewport breakpoint (matches max-width: 820px)
   const [isMobile, setIsMobile] = useState(false);
 
-  // Hydrate from localStorage once on mount.
+  // 서버 렌더 결과와 어긋나지 않도록 저장값은 마운트 후에 읽는다.
   useEffect(() => {
     const m = readStored(MODE_KEY, 'white');
     const f = parseInt(readStored(FONT_KEY, '14'), 10);
@@ -39,7 +35,7 @@ export function ThemeProvider({ children }) {
     setModeState(VALID_MODES.includes(m) ? m : 'white');
     setFontSizeState(Number.isFinite(f) && f >= 12 && f <= 18 ? f : 14);
 
-    // Viewport-aware default for sidebar: open on desktop, closed on mobile.
+    // 사이드바는 사용자가 직접 여닫은 적이 없을 때만 화면 크기를 따라간다.
     const mq = window.matchMedia('(max-width: 820px)');
     const m0 = mq.matches;
     setIsMobile(m0);
@@ -53,13 +49,11 @@ export function ThemeProvider({ children }) {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // Apply data-mode to <html> whenever it changes.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.dataset.mode = mode;
   }, [mode]);
 
-  // Apply --dd-body to <html> whenever fontSize changes.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.style.setProperty('--dd-body', `${fontSize}px`);
@@ -107,7 +101,7 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    // Safe fallback so SSR or out-of-tree consumers don't crash.
+    // Provider 밖(SSR 등)에서 호출돼도 깨지지 않도록 기본값을 돌려준다.
     return {
       mode: 'white', setMode: () => {},
       fontSize: 14, setFontSize: () => {},

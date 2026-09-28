@@ -107,6 +107,8 @@ export default function BoardPage() {
     } catch {}
   }
 
+  // 글 수가 적어 전체를 받아 브라우저에서 검색·페이징한다. 글이 많아지면 저장할 때 검색용 평문과
+  // 썸네일을 필드로 남기고, 목록은 필요한 필드만 커서 페이징으로 읽는 방식으로 옮긴다.
   const filtered = posts.filter(p => {
     const matchSearch = matchAny([p.title, stripHtml(p.content), p.nickname, p.prefix], search);
     const matchPrefix = !filterPrefix || p.prefix === filterPrefix;
@@ -143,6 +145,7 @@ export default function BoardPage() {
     finally { setSubmitting(false); }
   }
 
+  // 임시저장은 서버 API를 거치지 않고 본인 문서에 바로 쓰므로, 나중에 에디터로 다시 불러올 내용을 여기서 sanitize한다.
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
     const sanitized = sanitizeHtmlForStorage(content);
@@ -168,7 +171,6 @@ export default function BoardPage() {
       <NoticeBanner />
       <div className="section-title">자유게시판</div>
 
-      {/* 검색 + 말머리 필터 */}
       <div className={styles.searchFilterWrap}>
         {prefixes.length > 0 && (
           <div className={styles.prefixFilterBar}>
@@ -191,7 +193,6 @@ export default function BoardPage() {
         />
       </div>
 
-      {/* 글쓰기 버튼 */}
       {user ? (
         <button onClick={() => setShowForm(!showForm)} className={`btn-primary ${styles.writeBtn}`}>
           {showForm ? <><X size={14} /> 닫기</> : <><Pencil size={14} /> 글쓰기</>}
@@ -203,7 +204,6 @@ export default function BoardPage() {
         </div>
       )}
 
-      {/* 글쓰기 폼 */}
       {showForm && (
         <div className={`card ${styles.formCard}`}>
           {draft && (
@@ -211,7 +211,6 @@ export default function BoardPage() {
               <Save size={12} /> 임시저장된 내용 불러오기
             </button>
           )}
-          {/* 글머리 */}
           {prefixes.length > 0 && (
             <select value={prefix} onChange={e => setPrefix(e.target.value)} className={styles.fieldGap}>
               <option value="">글머리 선택 (선택사항)</option>
@@ -241,7 +240,6 @@ export default function BoardPage() {
         </div>
       )}
 
-      {/* 보기 모드 선택 */}
       <div role="radiogroup" aria-label="보기 모드" className={styles.viewModeBar}>
         {VIEW_MODES.map(m => (
           <button
@@ -256,7 +254,6 @@ export default function BoardPage() {
         ))}
       </div>
 
-      {/* 게시글 목록 */}
       {filtered.length === 0 ? (
         <p className="empty-msg">게시글이 없어요.</p>
       ) : viewMode === 'board' ? (

@@ -1,11 +1,8 @@
 'use client';
 
-// Extract a dominant color from a book cover URL and derive a 3-tone palette
-// { color, spine, cover } that matches the same shape as bookColors().
-//
-// We pipe through /api/cover-proxy so Kakao/Naver CDN images can be drawn into
-// a canvas without tainting it. Results are cached in localStorage keyed by
-// the original URL, so a book only pays the cost once per browser.
+// 표지 이미지의 대표색으로 bookColors()와 같은 모양의 팔레트를 만든다.
+// 카카오·네이버 CDN 이미지는 CORS 헤더가 없어 canvas가 오염되므로 /api/cover-proxy를 거친다.
+// 추출 비용이 크니 원본 URL 기준으로 localStorage에 캐시해 브라우저당 한 번만 계산한다.
 
 const CACHE_KEY = 'dd-cover-colors-v1';
 const inFlight = new Map();
@@ -46,16 +43,17 @@ function dominantFromImage(img) {
   ctx.drawImage(img, 0, 0, w, h);
   let data;
   try { data = ctx.getImageData(0, 0, w, h).data; }
-  catch { return null; } // tainted
+  catch { return null; } // 프록시를 거치지 않은 이미지는 canvas가 오염돼 읽을 수 없다.
 
-  // Two-pass: prefer saturated mids; fall back to any non-extreme color.
+  // 흰 여백·검은 글자가 대표색으로 뽑히지 않도록 채도 있는 중간 톤을 우선하고,
+  // 흑백 위주 표지처럼 그런 색이 없을 때만 느슨한 기준으로 돌아간다.
   const buckets = new Map();
   const fallback = new Map();
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
     if (a < 200) continue;
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    // Bucket key: 5 bits per channel.
+    // 비슷한 색을 한 묶음으로 세기 위해 채널당 5비트로 양자화한다.
     const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
 
     const addTo = (map) => {
@@ -64,9 +62,7 @@ function dominantFromImage(img) {
       map.set(key, e);
     };
 
-    // Strict: skip near-white, near-black, low-sat.
     if (max >= 30 && min <= 230 && max - min >= 30) addTo(buckets);
-    // Loose: only skip pure white/black.
     if (max >= 18 && min <= 240) addTo(fallback);
   }
 
@@ -91,9 +87,8 @@ function paletteFromHex(hex) {
   };
 }
 
-// WCAG relative luminance. Returns text colors that read on top of `hex`.
-// Used to flip spine text between near-white and near-black so pale covers
-// (베이지/노랑/파스텔) don't lose their title.
+// 베이지·노랑·파스텔처럼 밝은 표지에서 책등 제목이 묻히지 않도록
+// WCAG 상대 휘도로 흰 글자와 검은 글자 중 하나를 고른다.
 export function textOn(hex) {
   const light = {
     strong: 'rgba(255,255,255,.96)',

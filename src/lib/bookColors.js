@@ -1,6 +1,5 @@
-// Deterministic book spine palette derived from title hash.
-// If a Firestore book document already has color/spine/cover fields,
-// those win; otherwise we derive a 3-color set from the title.
+// 표지 색을 추출하기 전이나 표지가 없는 책도 늘 같은 색으로 보이도록 제목 해시로 팔레트를 고른다.
+// 책 문서에 color/spine/cover가 저장돼 있으면 그 값이 우선한다.
 
 const PALETTES = [
   { color: '#c8362a', spine: '#a8261c', cover: '#d44034' }, // red
@@ -22,7 +21,7 @@ function hashString(s) {
   const str = String(s || '');
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) + h) + str.charCodeAt(i);
-    h = h & h; // 32-bit
+    h = h & h; // 32비트 정수로 유지
   }
   return Math.abs(h);
 }
@@ -31,8 +30,6 @@ export function paletteFor(title) {
   return PALETTES[hashString(title) % PALETTES.length];
 }
 
-// Public: get { color, spine, cover } for a book. Prefers DB fields,
-// falls back to title-hashed palette.
 export function bookColors(book) {
   if (!book) return PALETTES[0];
   if (book.color && book.spine && book.cover) {

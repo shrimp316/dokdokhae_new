@@ -38,11 +38,11 @@ export default function MyPage() {
 
   async function loadMyData() {
     setLoading(true);
-    // 내 게시글
     const postSnap = await getDocs(query(collection(db, 'board'), where('uid', '==', user.uid), orderBy('createdAt', 'desc')));
     setMyPosts(postSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-    // 내 댓글 (collectionGroup)
+    // 댓글에는 글 제목이 없어 댓글마다 부모 글을 읽는다.
+    // 댓글이 많아지면 작성할 때 글 제목을 함께 저장하는 방식으로 바꾼다.
     try {
       const commentSnap = await getDocs(query(collectionGroup(db, 'comments'), where('uid', '==', user.uid), orderBy('createdAt', 'desc')));
       const comments = await Promise.all(commentSnap.docs.map(async d => {
@@ -148,7 +148,6 @@ export default function MyPage() {
 
   return (
     <div>
-      {/* 프로필 */}
       <div className={`card ${styles.profileCard}`}>
         <div className={styles.avatar}>
           {profile?.nickname?.slice(0, 1)}
@@ -179,7 +178,6 @@ export default function MyPage() {
         </form>
       </div>
 
-      {/* 탭 */}
       <div className={styles.tabBar}>
         {[['posts', `내 게시글 (${myPosts.length})`], ['comments', `내 댓글 (${myComments.length})`]].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}

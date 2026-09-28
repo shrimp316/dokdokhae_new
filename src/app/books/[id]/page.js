@@ -106,6 +106,7 @@ export default function BookReviewsPage({ params }) {
     }
   }
 
+  // 임시저장은 서버 API를 거치지 않고 본인 문서에 바로 쓰므로, 나중에 에디터로 다시 불러올 내용을 여기서 sanitize한다.
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
     const sanitized = sanitizeHtmlForStorage(content);
@@ -126,12 +127,10 @@ export default function BookReviewsPage({ params }) {
 
   return (
     <div>
-      {/* 뒤로가기 */}
       <button onClick={() => router.push('/books')} className={styles.backBtn}>
         <ArrowLeft size={14} /> 목록으로
       </button>
 
-      {/* 책 정보 */}
       <div className={`card ${styles.bookInfoCard}`}>
         {book.cover ? (
           <img src={book.cover} alt={book.title} className={styles.coverImg} />
@@ -145,7 +144,6 @@ export default function BookReviewsPage({ params }) {
         </div>
       </div>
 
-      {/* 토론 질문 */}
       {questions.length > 0 && (
         <div className={`card ${styles.questionsCard}`}>
           <h2 className={styles.questionsTitle}><MessageCircle size={14} /> 독서모임 토론 질문</h2>
@@ -160,12 +158,10 @@ export default function BookReviewsPage({ params }) {
         </div>
       )}
 
-      {/* 감상평 작성 */}
       {user ? (
         <div className={`card ${styles.reviewFormCard}`}>
           <h3 className={styles.reviewFormTitle}><Pencil size={14} /> 감상평 남기기</h3>
 
-          {/* 별점 */}
           <div className={styles.starRow}>
             {[1,2,3,4,5].map(n => (
               <button key={n} type="button" onClick={() => setRating(n)}
@@ -176,7 +172,6 @@ export default function BookReviewsPage({ params }) {
             {rating > 0 && <button onClick={() => setRating(0)} className={styles.resetBtn}>초기화</button>}
           </div>
 
-          {/* Quill */}
           <div className={styles.editorWrap}>
             <QuillEditor
               value={content}
@@ -207,7 +202,6 @@ export default function BookReviewsPage({ params }) {
         </div>
       )}
 
-      {/* 감상평 목록 */}
       <div className={styles.reviewCountLabel}>감상평 {reviews.length}개</div>
       {reviews.length === 0 ? (
         <p className="empty-msg">아직 감상평이 없어요. 첫 번째로 남겨보세요!</p>

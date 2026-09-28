@@ -40,6 +40,7 @@ export async function POST(request) {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic({ apiKey });
 
+    // curator_intro는 저작권이 살아 있는 책이므로, AI가 원문을 인용하거나 없는 구절을 지어내지 않도록 규칙을 강하게 건다.
     let prompt;
     if (kind === 'curator_intro') {
       prompt = `당신은 독서 큐레이터입니다. 아래 책에 대한 큐레이터 코멘트를 작성해주세요.

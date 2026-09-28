@@ -21,6 +21,7 @@ export async function POST(request) {
     const pinned = booleanValue(body.pinned, 'pinned');
     const db = getAdminDb();
     const ref = db.collection('notices').doc();
+    // 고정 공지는 하나만 두므로, 기존 고정 해제와 새 공지 저장을 한 배치로 커밋한다.
     const batch = db.batch();
 
     if (pinned) {

@@ -31,6 +31,7 @@ async function resolveComment(db, { collectionName, postId, commentId }) {
     };
   }
 
+  // 이 주의 글은 관리자가 올린 글이라 댓글 알림을 받을 작성자가 없다. (답글 알림만 보낸다)
   if (collectionName === 'featuredPassages') return null;
 
   const postSnap = await db.collection(collectionName).doc(postId).get();
@@ -93,6 +94,8 @@ export async function POST(request) {
     }
 
     if (!resolved) return NextResponse.json({ success: true, skipped: true });
+    // 알림 내용은 요청 본문이 아니라 저장된 댓글·좋아요에서 읽는다. 그 작성자가 요청자와 같아야
+    // 다른 사람 이름으로 알림을 만들 수 없다.
     if (resolved.actorUid !== authResult.user.uid) {
       return NextResponse.json({ error: 'Notification actor mismatch' }, { status: 403 });
     }
@@ -107,6 +110,8 @@ export async function POST(request) {
       return NextResponse.json({ success: true, skipped: true });
     }
 
+    // 같은 댓글, 같은 사람의 같은 글 좋아요는 알림 하나로 유지한다.
+    // 좋아요를 껐다 켜도 알림이 쌓이거나 푸시가 반복되지 않는다.
     const notifId = type === 'comment'
       ? commentId
       : `like_${collectionName}_${postId}_${resolved.actorUid}`;
@@ -134,6 +139,7 @@ export async function POST(request) {
 
     const tokenSnap = await db.collection('fcmTokens').doc(recipientUid).get();
     const token = tokenSnap.exists ? tokenSnap.data().token : null;
+    // 푸시를 받지 못하는 회원을 찾아내기 위한 진단 기록
     if (!token) {
       await db.collection('fcmDiagnostics').add({
         uid: recipientUid, stage: 'no-token', reason: null,
@@ -174,6 +180,8 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error('notify failed', e);
+    // 지금은 에러도 200으로 돌려주고 e.message를 그대로 노출한다.
+    // 다른 API처럼 contentApiErrorResponse 형식으로 맞출 예정이다.
     return NextResponse.json({ success: false, error: e.message }, { status: 200 });
   }
 }

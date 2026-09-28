@@ -41,7 +41,7 @@ export default function ReviewsPage() {
     const revs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     setReviews(revs);
 
-    // 책 정보 캐시
+    // 카드에 책 제목을 보여주기 위해 필요한 책만 한 번씩 읽는다.
     const bookIds = [...new Set(revs.map(r => r.bookId))];
     const bookMap = {};
     await Promise.all(bookIds.map(async bid => {

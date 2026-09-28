@@ -39,6 +39,7 @@ export default function MonthCalendar({ meetings = [], value = null, onChange })
       arr.push(new Date(view.y, view.m, day));
     }
     while (arr.length % 7 !== 0) arr.push(null);
+    // 달마다 주 수가 달라도 달력 높이가 흔들리지 않도록 항상 6주를 채운다.
     while (arr.length < 42) arr.push(null);
     return arr;
   }, [view]);

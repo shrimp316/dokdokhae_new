@@ -13,8 +13,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Profile edits (for example, from My Page) can refresh the cached profile
-  // without requiring a full page reload.
+  // 마이페이지에서 닉네임 등을 바꾼 뒤 새로고침 없이 반영하려고 외부에 연다.
   const refreshProfile = async (uid = auth.currentUser?.uid) => {
     if (!uid) {
       setProfile(null);

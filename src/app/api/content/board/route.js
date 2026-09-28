@@ -24,6 +24,7 @@ export async function POST(request) {
     const prefix = optionalString(body.prefix, 'prefix', CONTENT_LIMITS.prefix);
     const content = sanitizedRichHtml(body.content);
 
+    // 닉네임은 요청 본문이 아니라 프로필에서 가져와 다른 회원을 사칭할 수 없게 한다.
     const ref = await db.collection('board').add({
       title,
       prefix,

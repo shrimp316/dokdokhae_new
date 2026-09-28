@@ -1,6 +1,5 @@
-/* Small internal spacing scale — composed with the structural classes
-   below (e.g. `${styles.rowBase} ${styles.mb12}`). Scoped to this one
-   page's module, not a site-wide utility system. */
+/* 이 페이지 안에서만 쓰는 간격 클래스. 아래 구조 클래스와 조합한다. (예: `${styles.rowBase} ${styles.mb12}`)
+   사이트 전역 유틸리티로 넓히지 않는다. */
 .mb6 { margin-bottom: 6px; }
 .mb8 { margin-bottom: 8px; }
 .mb10 { margin-bottom: 10px; }
@@ -81,7 +80,7 @@
   color: #fff;
 }
 
-/* Section shell (was sectionStyle/h3Style/listItemStyle JS consts) */
+/* Section shell */
 .section {
   background: var(--card);
   border-radius: var(--radius);

@@ -9,6 +9,7 @@ import { auth, db } from '@/lib/firebase';
 import { authenticatedFetch, authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { commentMode } from '@/lib/commentPolicy';
 
+// 알림은 부가 기능이라 실패해도 좋아요·댓글 자체는 성공으로 둔다.
 function notify(payload) {
   authenticatedFetch('/api/notify', {
     method: 'POST',
@@ -38,6 +39,7 @@ export function useLikes(collectionName, postId, user) {
     }
     load();
     return () => { cancelled = true; };
+  // user 객체는 토큰이 갱신될 때마다 바뀌므로 계정이 바뀔 때(uid)만 다시 읽는다.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionName, postId, user?.uid]);
 
@@ -46,12 +48,13 @@ export function useLikes(collectionName, postId, user) {
     const likeRef = doc(db, collectionName, postId, 'likes', user.uid);
     const postRef = doc(db, collectionName, postId);
 
-    // optimistic UI
+    // 누르는 즉시 반영하고, 저장이 실패하면 되돌린다.
     const willLike = !liked;
     setLiked(willLike);
     setLikeCount(c => Math.max(0, c + (willLike ? 1 : -1)));
 
     try {
+      // 좋아요 문서와 likeCount가 어긋나지 않도록 한 트랜잭션에서 함께 바꾼다.
       await runTransaction(db, async (tx) => {
         const likeSnap = await tx.get(likeRef);
         const postSnap = await tx.get(postRef);
@@ -68,7 +71,6 @@ export function useLikes(collectionName, postId, user) {
       if (willLike) notify({ type: 'like', collectionName, postId });
     } catch (err) {
       console.error('toggleLike failed', err);
-      // rollback optimistic UI
       setLiked(!willLike);
       setLikeCount(c => Math.max(0, c + (willLike ? -1 : 1)));
     }

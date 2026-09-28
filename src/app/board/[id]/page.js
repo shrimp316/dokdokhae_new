@@ -60,6 +60,8 @@ export default function BoardPostPage({ params }) {
     await toggleLike();
   }
 
+  // 작성·수정은 sanitize 때문에 서버 API를 거치지만, 삭제는 검증할 내용이 없어
+  // firestore.rules(작성자·관리자만 허용)에 맡기고 브라우저에서 바로 지운다.
   async function handleDelete() {
     if (!confirm('삭제할까요?')) return;
     await deleteDoc(doc(db, 'board', id));
@@ -106,7 +108,6 @@ export default function BoardPostPage({ params }) {
         <ArrowLeft size={14} /> 목록으로
       </Link>
 
-      {/* 게시글 */}
       <div className={`card ${styles.postCard}`}>
         {editing ? (
           <div>
@@ -149,7 +150,6 @@ export default function BoardPostPage({ params }) {
               <div dangerouslySetInnerHTML={dangerousHtml(post.content)} />
             </ContentLightbox>
 
-            {/* 좋아요 + 액션 */}
             <div className={styles.actionsRow}>
               <button onClick={handleToggleLike} className={styles.roundBtn} data-liked={liked || undefined}>
                 <LikeBurst liked={liked} likeCount={likeCount} size={14} />
@@ -168,7 +168,6 @@ export default function BoardPostPage({ params }) {
         )}
       </div>
 
-      {/* 댓글 */}
       <div className={`card ${styles.commentsCard}`}>
         <CommentSection collectionName="board" postId={id} isAdmin={isAdmin} />
       </div>

@@ -17,7 +17,6 @@ export default function ModeToggle() {
         Display
       </div>
 
-      {/* Mode segmented control */}
       <div
         role="radiogroup"
         aria-label="화면 모드"
@@ -41,7 +40,6 @@ export default function ModeToggle() {
         })}
       </div>
 
-      {/* Font size A− / px / A+ */}
       <div className={styles.fontRow}>
         <button
           type="button"

@@ -31,8 +31,8 @@ function MonthIssue({ featured }) {
     return <div className={styles.coverPlaceholder} />;
   }
   if (featured.cover && /^https?:\/\//.test(featured.cover)) {
-    // eslint-disable-next-line @next/next/no-img-element
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={featured.cover}
         alt={featured.title}
@@ -40,7 +40,7 @@ function MonthIssue({ featured }) {
       />
     );
   }
-  // SVG cover placeholder driven by hashed palette.
+  // 표지 이미지가 없어도 빈칸으로 두지 않고 책마다 고정된 색으로 표지를 그린다.
   return (
     <div
       className={styles.coverGradient}
@@ -114,7 +114,6 @@ export default function HomePage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Masthead ── */}
       <section className={styles.masthead}>
         <div className={styles.mastheadRow}>
           <span className={styles.mastheadLabel}>
@@ -131,7 +130,7 @@ export default function HomePage() {
             <>
               {(() => {
                 const t = featured.title;
-                // Highlight last 2~3 chars in italic accent.
+                // 잡지 표지처럼 제목 끝 몇 글자를 다음 줄에 강조색으로 둔다.
                 const split = Math.max(0, t.length - 3);
                 const head = t.slice(0, split);
                 const tail = t.slice(split);
@@ -209,7 +208,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── This week / 공지 ── */}
       <section
         className={`dd-home-bottom ${styles.bottomGrid}`}
       >
@@ -279,7 +277,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Quote band (only if featured book has quote/excerpt) ── */}
       {(featured?.quote || featured?.excerpt) && (
         <section className={styles.quoteBand}>
           <span className={styles.quoteLabel}>
@@ -294,7 +291,8 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Pinned-notice modal (kept from previous behaviour) */}
+      {/* 고정 공지 모달: 지금은 noticeOpen을 켜는 곳이 없어 열리지 않는다.
+          다시 쓸 계획이 없으면 pinnedNotice 쿼리와 함께 제거한다. */}
       {noticeOpen && pinnedNotice && (
         <div className="modal-overlay" onClick={() => setNoticeOpen(false)}>
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>

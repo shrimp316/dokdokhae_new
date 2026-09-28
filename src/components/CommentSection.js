@@ -16,6 +16,7 @@ import styles from './CommentSection.module.css';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
+// 같은 탭에서는 닉네임을 다시 입력하지 않게 하되, 공용 기기에 남지 않도록 탭을 닫으면 잊는다.
 const ANON_NICKNAME_KEY = 'featuredAnonNickname';
 const SANITIZED_MESSAGE = '안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.';
 
@@ -46,6 +47,7 @@ async function checkAnonNickname(nickname) {
       return false;
     }
   } catch (error) {
+    // 미리 확인하지 못해도 서버가 다시 검사하므로 작성은 막지 않는다.
     console.error('nickname check failed', error);
   }
   return true;
@@ -104,7 +106,7 @@ export default function CommentSection({ collectionName, postId, isAdmin = false
     return (await checkAnonNickname(nickname)) ? nickname : null;
   }
 
-  // 작성에 성공하면 true를 반환한다.
+  // 실패하면 입력한 내용을 남겨 두도록, 성공했을 때만 true를 돌려준다.
   async function submit(text, parentId) {
     const rich = mode.rich && !parentId;
     if (!canWrite || isBlank(text, rich)) return false;
@@ -242,7 +244,7 @@ export default function CommentSection({ collectionName, postId, isAdmin = false
   );
 }
 
-// 댓글·답글 한 줄: 작성자 정보, 본문(또는 수정 폼), 액션 버튼
+// 댓글과 답글은 모양이 같아 한 컴포넌트로 그린다. (답글에는 답글 버튼만 없다.)
 function CommentRow({ comment, ctx }) {
   const editing = ctx.editCommentId === comment.id;
   const rich = isRichComment(ctx.mode, comment);

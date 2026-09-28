@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import styles from './ContentLightbox.module.css';
 
+// 본문은 HTML 문자열로 그려져 이미지마다 핸들러를 달 수 없으므로, 감싼 영역에서 클릭을 받아 확대한다.
 export default function ContentLightbox({ children, contentClassName, contentStyle }) {
   const [src, setSrc] = useState(null);
 

@@ -40,12 +40,13 @@ export default function FeaturedDetailPage({ params }) {
         <ArrowLeft size={14} /> 목록으로
       </button>
 
-      {/* 기간 배지 */}
       <div className={styles.periodBadge}>
         {passage.period === 'weekly' ? <><Calendar size={11} /> 이 주의 글</> : <><CalendarDays size={11} /> 이 달의 글</>} · {passage.periodKey}
       </div>
 
-      {/* 발췌문 / 큐레이터 소개 */}
+      {/* 저작권 때문에 kind마다 보여주는 방식이 다르다.
+          public_domain은 보호기간이 끝난 원문이라 인용하고, curator_intro는 원문이 아닌 소개임을 밝힌다.
+          kind가 없는 것은 예전 형식(passage 필드)이다. */}
       <div className={`card ${styles.passageCard}`}>
         {passage.kind === 'public_domain' && passage.excerpt ? (
           <>
@@ -106,7 +107,6 @@ export default function FeaturedDetailPage({ params }) {
           </>
         )}
 
-        {/* 공유 버튼 */}
         <div className={styles.shareRow}>
           <button onClick={handleShare} className={styles.shareBtn}>
             공유
@@ -114,7 +114,6 @@ export default function FeaturedDetailPage({ params }) {
         </div>
       </div>
 
-      {/* 토론 질문 */}
       {passage.questions?.length > 0 && (
         <div className={`card ${styles.questionsCard}`}>
           <h2 className={styles.questionsTitle}><MessageCircle size={14} /> 함께 나눠볼 질문</h2>
@@ -129,7 +128,6 @@ export default function FeaturedDetailPage({ params }) {
         </div>
       )}
 
-      {/* 댓글 */}
       <div className={`card ${styles.commentsCard}`}>
         <CommentSection collectionName="featuredPassages" postId={id} isAdmin={isAdmin} />
       </div>

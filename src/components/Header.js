@@ -19,7 +19,7 @@ export default function Header() {
         if (cancelled || snap.empty) return;
         setFeaturedTitle(snap.docs[0].data().title || '');
       } catch {
-        // ignore — header simply shows nothing if the fetch fails.
+        // 헤더는 부가 정보라 불러오지 못하면 그냥 숨긴다.
       }
     })();
     return () => { cancelled = true; };

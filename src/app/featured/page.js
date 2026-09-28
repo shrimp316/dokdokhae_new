@@ -36,7 +36,6 @@ export default function FeaturedPage() {
         책에서 길어올린 한 구절, 그리고 함께 나눌 질문들.
       </p>
 
-      {/* 현재 활성 발췌문 강조 */}
       {active && (() => {
         const t = previewText(active);
         const quoted = isPD(active);
@@ -64,7 +63,6 @@ export default function FeaturedPage() {
         );
       })()}
 
-      {/* 주간 / 월간 탭 */}
       <div className={styles.tabBar}>
         {[['weekly', <><Calendar size={13} /> 주간</>], ['monthly', <><CalendarDays size={13} /> 월간</>]].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
