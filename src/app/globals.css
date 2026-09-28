@@ -60,7 +60,7 @@ html, body {
   --text:      var(--dd-text);
   --muted:     var(--dd-text-muted);
   --accent:    var(--dd-accent);
-  --accent2:   var(--dd-accent-soft);
+  --accent2:   var(--dd-accent);        /* 글자·테두리용 강조색. 연한 배경은 --tag-bg */
   --line:      var(--dd-border);
   --tag-bg:    var(--dd-accent-soft);
   --danger:    #b34a2a;

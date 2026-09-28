@@ -65,9 +65,10 @@
 .day[data-sat] {
   color: #2a6fb3;
 }
+/* 모임 있는 날은 연한 배경 + 강조색 글자로, 선택한 날(진한 배경)과 구분한다. */
 .day[data-event] {
-  background: var(--accent2);
-  color: #fff;
+  background: var(--tag-bg);
+  color: var(--accent);
   font-weight: 600;
 }
 .day[data-selected] {
