@@ -163,8 +163,11 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.error) { alert('AI 오류: ' + data.error); return; }
       setAiQResults(data.questions || []);
-    } catch (e) { alert('생성 실패: ' + e.message); }
-    setAiQLoading(false);
+    } catch (e) {
+      alert('생성 실패: ' + e.message);
+    } finally {
+      setAiQLoading(false);
+    }
   }
 
   async function saveEditQuestion(id) {
@@ -320,8 +323,11 @@ export default function AdminPage() {
         aiGeneratedNote: !!data.curatorNote,
         aiGeneratedQuestions: !!(data.questions && data.questions.length),
       }));
-    } catch (e) { alert('생성 실패: ' + e.message); }
-    setAiPassageLoading(false);
+    } catch (e) {
+      alert('생성 실패: ' + e.message);
+    } finally {
+      setAiPassageLoading(false);
+    }
   }
 
   async function searchKakaoForPassage() {
@@ -371,8 +377,11 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.error) { alert('검색 실패: ' + data.error); setPdSearchResults([]); return; }
       setPdSearchResults(data.books || []);
-    } catch (e) { alert('검색 실패: ' + e.message); }
-    setPdSearchLoading(false);
+    } catch (e) {
+      alert('검색 실패: ' + e.message);
+    } finally {
+      setPdSearchLoading(false);
+    }
   }
 
   async function selectGutendexBook(b) {
