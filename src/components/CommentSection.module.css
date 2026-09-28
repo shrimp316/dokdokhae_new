@@ -1,7 +1,5 @@
-/* Formerly-inline styles from CommentSection.js.
-   .comment-item/.reply-item/.btn-sm/.btn-outline/.btn-ghost stay in
-   globals.css — src/app/featured/[id]/page.js also renders comments
-   with .comment-item/.reply-item. */
+/* CommentSection.js 스타일.
+   .comment-item/.reply-item/.btn-sm/.btn-outline/.btn-ghost는 globals.css에 있다. */
 
 .wrapper {
   margin-top: 12px;
@@ -22,7 +20,6 @@
 .composerRow {
   display: flex;
   gap: 6px;
-  margin-top: 8px;
   align-items: flex-start;
 }
 .replyRow {
@@ -38,6 +35,31 @@
   margin-top: 4px;
   align-items: flex-start;
 }
+/* 리치(에디터) 댓글: 이 주의 글 */
+.composer {
+  margin-top: 8px;
+}
+.nicknameInput {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.richEdit {
+  margin-top: 4px;
+}
+.editorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+.richText {
+  font-size: 14px;
+  line-height: 1.7;
+  padding: 0;
+  border: none;
+  margin-top: 2px;
+}
+
 .textarea {
   min-height: 44px;
   resize: vertical;
@@ -53,10 +75,26 @@
   flex: 1;
   min-width: 0;
 }
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .itemNickname {
   font-size: 12px;
   font-weight: 600;
   color: var(--accent);
+}
+.anonBadge {
+  font-size: 10px;
+  background: var(--tag-bg);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+.itemDate {
+  font-size: 11px;
+  color: var(--muted);
 }
 .itemActions {
   display: flex;

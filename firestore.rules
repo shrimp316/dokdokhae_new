@@ -44,6 +44,8 @@ service cloud.firestore {
     }
 
     // 댓글 본문: 1~5000자 (서버 API의 댓글 제한과 동일)
+    // 최대 길이는 src/lib/commentPolicy.js의 COMMENT_MAX_LENGTH와 같아야 한다.
+    // (tests/comment-policy.test.mjs가 확인)
     function validCommentContent(content) {
       return content is string
         && content.size() >= 1

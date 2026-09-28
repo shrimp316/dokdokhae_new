@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.server';
+import { ANON_NICKNAME_MAX, COMMENT_MAX_LENGTH } from '@/lib/commentPolicy';
 
 export const CONTENT_LIMITS = {
   title: 200,
   prefix: 50,
   richHtml: 100_000,
-  commentHtml: 5_000,
+  commentHtml: COMMENT_MAX_LENGTH,
   memberNickname: 12,
-  nickname: 20,
+  nickname: ANON_NICKNAME_MAX,
   documentId: 256,
   // AI 생성 API 프롬프트에 들어가는 입력
   bookAuthor: 200,

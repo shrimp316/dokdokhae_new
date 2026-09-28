@@ -13,6 +13,7 @@ import {
   sanitizedRichHtml,
 } from '@/lib/contentApi';
 import { NICKNAME_TAKEN_MESSAGE, isMemberNicknameTaken } from '@/lib/nicknames';
+import { ANON_NICKNAME_MIN } from '@/lib/commentPolicy';
 
 function commentNickname(authUser, profile, suppliedNickname) {
   if (profile) {
@@ -33,8 +34,8 @@ function commentNickname(authUser, profile, suppliedNickname) {
   }
 
   const nickname = requiredString(suppliedNickname, 'nickname', CONTENT_LIMITS.nickname);
-  if (nickname.length < 2) {
-    throw new ContentApiError(400, 'nickname must be at least 2 characters');
+  if (nickname.length < ANON_NICKNAME_MIN) {
+    throw new ContentApiError(400, `nickname must be at least ${ANON_NICKNAME_MIN} characters`);
   }
   return nickname;
 }
