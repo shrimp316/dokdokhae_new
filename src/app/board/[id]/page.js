@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLikes } from '@/lib/usePostInteractions';
 import { useRouter } from 'next/navigation';
+import { shareLink } from '@/lib/share';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -86,14 +87,8 @@ export default function BoardPostPage({ params }) {
     }
   }
 
-  async function handleShare() {
-    const url = window.location.href;
-    if (navigator.share) {
-      await navigator.share({ title: post.title, url });
-    } else {
-      await navigator.clipboard.writeText(url);
-      alert('링크가 복사됐어요!');
-    }
+  function handleShare() {
+    shareLink({ title: post.title, url: window.location.href });
   }
 
   const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';

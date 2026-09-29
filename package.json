@@ -12,7 +12,8 @@
     "test:nicknames": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/nicknames.test.mjs",
     "test:comment-policy": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/comment-policy.test.mjs",
     "test:html": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/html.test.mjs",
-    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames && npm run test:comment-policy && npm run test:html"
+    "test:share": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/share.test.mjs",
+    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames && npm run test:comment-policy && npm run test:html && npm run test:share"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

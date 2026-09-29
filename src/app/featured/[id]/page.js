@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
+import { shareLink } from '@/lib/share';
 import CommentSection from '@/components/CommentSection';
 import { ArrowLeft, Calendar, CalendarDays, ScrollText, PenLine, Bot, MessageCircle } from 'lucide-react';
 import styles from './featured-detail.module.css';
@@ -22,14 +23,8 @@ export default function FeaturedDetailPage({ params }) {
     });
   }, [id]);
 
-  async function handleShare() {
-    const url = window.location.href;
-    if (navigator.share) {
-      await navigator.share({ title: passage.bookTitle, url });
-    } else {
-      await navigator.clipboard.writeText(url);
-      alert('링크가 복사됐어요!');
-    }
+  function handleShare() {
+    shareLink({ title: passage.bookTitle, url: window.location.href });
   }
 
   if (!passage) return <div className="empty-msg">로딩 중…</div>;
