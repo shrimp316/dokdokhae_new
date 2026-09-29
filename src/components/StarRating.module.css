@@ -1,0 +1,38 @@
+/* 입력용 별 (감상평 작성·수정) */
+.inputStar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--line);
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+}
+.inputStar[data-active] {
+  color: #f0a500;
+}
+
+.resetBtn {
+  font-size: 11px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* 표시용 별 (감상평 카드) */
+.display {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+}
+.displayStar {
+  display: inline-flex;
+}
+.displayFilled {
+  color: var(--dd-accent);
+}
+.displayEmpty {
+  color: var(--dd-border);
+}

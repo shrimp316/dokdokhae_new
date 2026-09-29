@@ -8,10 +8,12 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
+import ReviewEditForm from '@/components/ReviewEditForm';
+import StarRating from '@/components/StarRating';
 import { sanitizeHtmlForStorage, alertIfSanitized } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { isEmptyRichHtml } from '@/lib/html';
-import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
+import { ArrowLeft, Library, MessageCircle, Pencil, Save } from 'lucide-react';
 import styles from './book-detail.module.css';
 
 const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
@@ -29,8 +31,6 @@ export default function BookReviewsPage({ params }) {
   const [rating, setRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [editContent, setEditContent] = useState('');
-  const [editRating, setEditRating] = useState(0);
   const [draft, setDraft] = useState('');
 
   useEffect(() => {
@@ -81,21 +81,6 @@ export default function BookReviewsPage({ params }) {
     if (!confirm('삭제할까요?')) return;
     await deleteDoc(doc(db, 'reviews', reviewId));
     loadReviews();
-  }
-
-  async function handleEdit(reviewId) {
-    if (isEmptyRichHtml(editContent)) { alert('내용을 입력해주세요.'); return; }
-    try {
-      const result = await authenticatedJsonFetch(`/api/content/reviews/${encodeURIComponent(reviewId)}`, {
-        method: 'PATCH',
-        body: { content: editContent, rating: editRating },
-      });
-      alertIfSanitized(result.contentWasSanitized);
-      setEditingId(null);
-      loadReviews();
-    } catch (error) {
-      alert(`저장 실패: ${error.message}`);
-    }
   }
 
   // 임시저장은 서버 API를 거치지 않고 본인 문서에 바로 쓰므로, 나중에 에디터로 다시 불러올 내용을 여기서 sanitize한다.
@@ -152,15 +137,7 @@ export default function BookReviewsPage({ params }) {
         <div className={`card ${styles.reviewFormCard}`}>
           <h3 className={styles.reviewFormTitle}><Pencil size={14} /> 감상평 남기기</h3>
 
-          <div className={styles.starRow}>
-            {[1,2,3,4,5].map(n => (
-              <button key={n} type="button" onClick={() => setRating(n)}
-                className={styles.starBtn} data-active={n <= rating || undefined}>
-                <Star size={22} fill={n <= rating ? 'currentColor' : 'none'} />
-              </button>
-            ))}
-            {rating > 0 && <button onClick={() => setRating(0)} className={styles.resetBtn}>초기화</button>}
-          </div>
+          <StarRating value={rating} onChange={setRating} size={22} allowReset className={styles.starRow} />
 
           <div className={styles.editorWrap}>
             <QuillEditor
@@ -198,34 +175,19 @@ export default function BookReviewsPage({ params }) {
       ) : (
         reviews.map(r => (
           editingId === r.id ? (
-            <div key={r.id} className="review-card">
-              <div className={styles.editRatingRow}>
-                {[1,2,3,4,5].map(n => (
-                  <button key={n} type="button" onClick={() => setEditRating(n)}
-                    className={styles.starBtnSm} data-active={n <= editRating || undefined}>
-                    <Star size={20} fill={n <= editRating ? 'currentColor' : 'none'} />
-                  </button>
-                ))}
-              </div>
-              <QuillEditor
-                value={editContent}
-                onChange={setEditContent}
-                placeholder="내용 수정…"
-                minHeight={120}
-                onImageUpload={(file) => uploadImage('reviews', file)}
-              />
-              <div className={styles.editActions}>
-                <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>
-                <button className={`btn-sm ${styles.editSaveBtn}`} onClick={() => handleEdit(r.id)}>수정 완료</button>
-              </div>
-            </div>
+            <ReviewEditForm
+              key={r.id}
+              review={r}
+              onCancel={() => setEditingId(null)}
+              onSaved={() => { setEditingId(null); loadReviews(); }}
+            />
           ) : (
             <ReviewCard
               key={r.id}
               review={r}
               bookTitle={book?.title}
               isAdmin={isAdmin}
-              onEdit={(rev) => { setEditingId(rev.id); setEditContent(rev.content); setEditRating(rev.rating || 0); }}
+              onEdit={(rev) => setEditingId(rev.id)}
               onDelete={(rev) => handleDelete(rev.id)}
             />
           )

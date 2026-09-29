@@ -25,27 +25,3 @@
   text-decoration: underline;
 }
 
-.editRatingRow {
-  margin-bottom: 6px;
-}
-.starBtn {
-  font-size: 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--line);
-  padding: 0;
-  display: inline-flex;
-}
-.starBtn[data-active] {
-  color: #f0a500;
-}
-.editActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-.editSaveBtn {
-  background: var(--accent);
-  color: #fff;
-}

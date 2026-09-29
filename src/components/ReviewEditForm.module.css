@@ -1,0 +1,14 @@
+.ratingRow {
+  margin-bottom: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.saveBtn {
+  background: var(--accent);
+  color: #fff;
+}

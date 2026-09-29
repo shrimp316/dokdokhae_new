@@ -2,21 +2,14 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { alertIfSanitized } from '@/lib/sanitize.client';
 import { mapDocs } from '@/lib/firestore';
-import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny } from '@/lib/searchUtils';
-import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
-import { isEmptyRichHtml } from '@/lib/html';
 import ReviewCard from '@/components/ReviewCard';
-import { Star } from 'lucide-react';
+import ReviewEditForm from '@/components/ReviewEditForm';
 import styles from './reviews.module.css';
-
-const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: false });
 
 export default function ReviewsPage() {
   const { user, profile } = useAuth();
@@ -26,8 +19,6 @@ export default function ReviewsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [editContent, setEditContent] = useState('');
-  const [editRating, setEditRating] = useState(0);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -58,21 +49,6 @@ export default function ReviewsPage() {
     if (!confirm('삭제할까요?')) return;
     await deleteDoc(doc(db, 'reviews', reviewId));
     loadReviews();
-  }
-
-  async function handleEdit(reviewId) {
-    if (isEmptyRichHtml(editContent)) { alert('내용을 입력해주세요.'); return; }
-    try {
-      const result = await authenticatedJsonFetch(`/api/content/reviews/${encodeURIComponent(reviewId)}`, {
-        method: 'PATCH',
-        body: { content: editContent, rating: editRating },
-      });
-      alertIfSanitized(result.contentWasSanitized);
-      setEditingId(null);
-      loadReviews();
-    } catch (error) {
-      alert(`저장 실패: ${error.message}`);
-    }
   }
 
   const filtered = reviews.filter(r =>
@@ -110,27 +86,12 @@ export default function ReviewsPage() {
       ) : (
         filtered.map(r => (
           editingId === r.id ? (
-            <div key={r.id} className="review-card">
-              <div className={styles.editRatingRow}>
-                {[1,2,3,4,5].map(n => (
-                  <button key={n} type="button" onClick={() => setEditRating(n)}
-                    className={styles.starBtn} data-active={n <= editRating || undefined}>
-                    <Star size={20} fill={n <= editRating ? 'currentColor' : 'none'} />
-                  </button>
-                ))}
-              </div>
-              <QuillEditor
-                value={editContent}
-                onChange={setEditContent}
-                placeholder="수정할 내용…"
-                minHeight={120}
-                onImageUpload={(file) => uploadImage('reviews', file)}
-              />
-              <div className={styles.editActions}>
-                <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>
-                <button className={`btn-sm ${styles.editSaveBtn}`} onClick={() => handleEdit(r.id)}>수정 완료</button>
-              </div>
-            </div>
+            <ReviewEditForm
+              key={r.id}
+              review={r}
+              onCancel={() => setEditingId(null)}
+              onSaved={() => { setEditingId(null); loadReviews(); }}
+            />
           ) : (
             <ReviewCard
               key={r.id}
@@ -138,7 +99,7 @@ export default function ReviewsPage() {
               bookTitle={books[r.bookId]?.title}
               showBookTitle
               isAdmin={isAdmin}
-              onEdit={(rev) => { setEditingId(rev.id); setEditContent(rev.content); setEditRating(rev.rating || 0); }}
+              onEdit={(rev) => setEditingId(rev.id)}
               onDelete={(rev) => handleDelete(rev.id)}
             />
           )

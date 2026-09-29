@@ -107,39 +107,6 @@
   gap: 6px;
   margin-bottom: 10px;
 }
-.starBtn {
-  font-size: 22px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--line);
-  padding: 0;
-  line-height: 1;
-  display: inline-flex;
-}
-.starBtn[data-active] {
-  color: #f0a500;
-}
-.starBtnSm {
-  font-size: 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--line);
-  padding: 0;
-  display: inline-flex;
-}
-.starBtnSm[data-active] {
-  color: #f0a500;
-}
-.resetBtn {
-  font-size: 11px;
-  color: var(--muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  margin-left: 4px;
-}
 .editorWrap {
   margin-bottom: 10px;
 }
@@ -187,15 +154,3 @@
   margin-bottom: 12px;
 }
 
-.editRatingRow {
-  margin-bottom: 6px;
-}
-.editActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-.editSaveBtn {
-  background: var(--accent);
-  color: #fff;
-}

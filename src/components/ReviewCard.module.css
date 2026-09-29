@@ -19,22 +19,6 @@
   }
 }
 
-.starFilled {
-  color: var(--dd-accent);
-}
-.starEmpty {
-  color: var(--dd-border);
-}
-
-.starsRow {
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-}
-.starIcon {
-  display: inline-flex;
-}
-
 .headerRow {
   display: flex;
   align-items: center;

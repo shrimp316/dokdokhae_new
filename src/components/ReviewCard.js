@@ -7,7 +7,8 @@ import { dangerousHtml } from '@/lib/sanitize.client';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';
-import { Star, BookOpen, Heart, MessageCircle } from 'lucide-react';
+import StarRating from '@/components/StarRating';
+import { BookOpen, Heart, MessageCircle } from 'lucide-react';
 import styles from './ReviewCard.module.css';
 
 const PREVIEW_LEN = 30;
@@ -30,16 +31,6 @@ export default function ReviewCard({
   const canModify = owner || isAdmin;
   const previewText = stripHtml(review.content || '').slice(0, PREVIEW_LEN);
 
-  const stars = (n) => (
-    <span className={styles.starsRow}>
-      {[1,2,3,4,5].map(s => (
-        <span key={s} className={`${styles.starIcon} ${s <= (n||0) ? styles.starFilled : styles.starEmpty}`}>
-          <Star size={13} fill={s <= (n||0) ? 'currentColor' : 'none'} />
-        </span>
-      ))}
-    </span>
-  );
-
   return (
     <div className="review-card">
       <div
@@ -48,7 +39,7 @@ export default function ReviewCard({
       >
         <div className={styles.headerLeft}>
           <span className={styles.nickname}>{review.nickname || '익명'}</span>
-          {stars(review.rating)}
+          <StarRating value={review.rating} />
           {showBookTitle && bookTitle && (
             <span className={`${styles.meta} ${styles.metaBookTitle} ${styles.bookTitleMeta}`}><BookOpen size={12} /> {bookTitle}</span>
           )}
