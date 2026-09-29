@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { authenticatedFetch, authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { commentMode } from '@/lib/commentPolicy';
 
@@ -102,7 +103,7 @@ export function useComments(collectionName, postId) {
     );
     return onSnapshot(q, (snap) => {
       // 방금 쓴 댓글은 서버 시각이 확정되기 전이라 createdAt을 추정값으로 채운다.
-      setComments(snap.docs.map(d => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) })));
+      setComments(mapDocs(snap, { serverTimestamps: 'estimate' }));
     }, (error) => {
       console.error('comments subscription failed', error);
     });

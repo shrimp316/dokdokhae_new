@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatDateTime } from '@/lib/format';
 import NoticeBanner from '@/components/NoticeBanner';
 import MonthCalendar from '@/components/MonthCalendar';
@@ -20,7 +21,7 @@ export default function SchedulePage() {
   useEffect(() => {
     async function load() {
       const snap = await getDocs(query(collection(db, 'meetings'), orderBy('date', 'asc')));
-      const meets = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const meets = mapDocs(snap);
       setMeetings(meets);
 
       const bookIds = [...new Set(meets.map(m => m.bookId).filter(Boolean))];

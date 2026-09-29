@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import Link from 'next/link';
 import { NotebookPen, Calendar, CalendarDays, ScrollText, PenLine, MessageCircle, ArrowRight } from 'lucide-react';
 import styles from './featured-list.module.css';
@@ -15,7 +16,7 @@ export default function FeaturedPage() {
     async function load() {
       setLoading(true);
       const snap = await getDocs(query(collection(db, 'featuredPassages'), orderBy('createdAt', 'desc')));
-      setPassages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPassages(mapDocs(snap));
       setLoading(false);
     }
     load();

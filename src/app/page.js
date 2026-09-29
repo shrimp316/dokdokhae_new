@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatDate, formatDotDate, formatTime } from '@/lib/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -62,7 +63,7 @@ export default function HomePage() {
 
       try {
         const meetSnap = await getDocs(query(collection(db, 'meetings'), orderBy('date', 'asc')));
-        const meetings = meetSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const meetings = mapDocs(meetSnap);
         const upcoming = meetings.filter((m) => m.date && new Date(m.date) >= new Date());
         if (upcoming.length) setNextMeeting(upcoming[0]);
       } catch {}
@@ -74,7 +75,7 @@ export default function HomePage() {
 
       try {
         const allNotices = await getDocs(query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(4)));
-        setNoticeList(allNotices.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setNoticeList(mapDocs(allNotices));
       } catch {}
 
       try {

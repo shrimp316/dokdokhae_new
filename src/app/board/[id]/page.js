@@ -2,6 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatMonthDay } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -11,7 +12,7 @@ import { shareLink } from '@/lib/share';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-import { dangerousHtml } from '@/lib/sanitize.client';
+import { dangerousHtml, alertIfSanitized } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { isEmptyRichHtml } from '@/lib/html';
 import ContentLightbox from '@/components/ContentLightbox';
@@ -54,7 +55,7 @@ export default function BoardPostPage({ params }) {
   async function loadPrefixes() {
     try {
       const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPrefixes(mapDocs(snap));
     } catch {}
   }
 
@@ -78,9 +79,7 @@ export default function BoardPostPage({ params }) {
         method: 'PATCH',
         body: { title: editTitle, prefix: editPrefix, content: editContent },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setEditing(false);
       loadPost();
     } catch (error) {

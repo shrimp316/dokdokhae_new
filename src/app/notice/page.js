@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatDotDate } from '@/lib/format';
 import Link from 'next/link';
 import { Pin } from 'lucide-react';
@@ -12,7 +13,7 @@ export default function NoticePage() {
 
   useEffect(() => {
     getDocs(query(collection(db, 'notices'), orderBy('createdAt', 'desc')))
-      .then(snap => setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      .then(snap => setPosts(mapDocs(snap)));
   }, []);
 
   return (

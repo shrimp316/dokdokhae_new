@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import BookShelfStudy from '@/components/BookShelfStudy';
 import styles from './books-list.module.css';
 
@@ -15,7 +16,7 @@ export default function BooksPage() {
       try {
         const snap = await getDocs(query(collection(db, 'books'), orderBy('addedAt', 'desc')));
         if (cancelled) return;
-        setBooks(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setBooks(mapDocs(snap));
       } catch {
         // 불러오지 못하면 빈 서가로 둔다.
       }

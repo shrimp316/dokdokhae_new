@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, collectionGroup, updateDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatMonthDay } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -40,7 +41,7 @@ export default function MyPage() {
   async function loadMyData() {
     setLoading(true);
     const postSnap = await getDocs(query(collection(db, 'board'), where('uid', '==', user.uid), orderBy('createdAt', 'desc')));
-    setMyPosts(postSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setMyPosts(mapDocs(postSnap));
 
     // 댓글에는 글 제목이 없어 댓글마다 부모 글을 읽는다.
     // 댓글이 많아지면 작성할 때 글 제목을 함께 저장하는 방식으로 바꾼다.

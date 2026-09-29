@@ -2,12 +2,13 @@
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
+import { sanitizeHtmlForStorage, alertIfSanitized } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { isEmptyRichHtml } from '@/lib/html';
 import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
@@ -49,12 +50,12 @@ export default function BookReviewsPage({ params }) {
 
   async function loadQuestions() {
     const snap = await getDocs(query(collection(db, 'bookQuestions'), where('bookId', '==', id), orderBy('order', 'asc')));
-    setQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setQuestions(mapDocs(snap));
   }
 
   async function loadReviews() {
     const snap = await getDocs(query(collection(db, 'reviews'), where('bookId', '==', id), orderBy('createdAt', 'desc')));
-    setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setReviews(mapDocs(snap));
   }
 
   async function handleSubmit() {
@@ -67,9 +68,7 @@ export default function BookReviewsPage({ params }) {
         method: 'POST',
         body: { bookId: id, content, rating },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setContent(''); setRating(0);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`)); } catch {}
       setDraft('');
@@ -91,9 +90,7 @@ export default function BookReviewsPage({ params }) {
         method: 'PATCH',
         body: { content: editContent, rating: editRating },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setEditingId(null);
       loadReviews();
     } catch (error) {
@@ -105,9 +102,7 @@ export default function BookReviewsPage({ params }) {
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
     const sanitized = sanitizeHtmlForStorage(content);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 임시저장합니다.');
-    }
+    alertIfSanitized(sanitized.removedUnsafeContent, { draft: true });
     try {
       await setDoc(doc(db, 'users', user.uid, 'drafts', `review_${id}`), {
         bookId: id, content: sanitized.html, updatedAt: serverTimestamp(),

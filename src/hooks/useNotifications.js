@@ -4,6 +4,7 @@ import {
   collection, doc, query, orderBy, limit, onSnapshot, updateDoc, writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { useAuth } from '@/lib/AuthContext';
 
 const LIST_LIMIT = 30;
@@ -24,7 +25,7 @@ export function useNotifications() {
       limit(LIST_LIMIT),
     );
     const unsub = onSnapshot(q, (snap) => {
-      setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setNotifications(mapDocs(snap));
     });
     return unsub;
   }, [user]);

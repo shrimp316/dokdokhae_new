@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { alertIfSanitized } from '@/lib/sanitize.client';
+import { mapDocs } from '@/lib/firestore';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -39,7 +41,7 @@ export default function ReviewsPage() {
       ? query(collection(db, 'reviews'), orderBy('createdAt', 'desc'))
       : query(collection(db, 'reviews'), where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
-    const revs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const revs = mapDocs(snap);
     setReviews(revs);
 
     // 카드에 책 제목을 보여주기 위해 필요한 책만 한 번씩 읽는다.
@@ -65,9 +67,7 @@ export default function ReviewsPage() {
         method: 'PATCH',
         body: { content: editContent, rating: editRating },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setEditingId(null);
       loadReviews();
     } catch (error) {

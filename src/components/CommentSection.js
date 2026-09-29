@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { formatMonthDay } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import { useComments } from '@/lib/usePostInteractions';
-import { dangerousHtml } from '@/lib/sanitize.client';
+import { alertIfSanitized, dangerousHtml } from '@/lib/sanitize.client';
 import { NICKNAME_TAKEN_MESSAGE } from '@/lib/nicknames';
 import {
   ANON_NICKNAME_MAX, ANON_NICKNAME_MIN, COMMENT_MAX_LENGTH, isRichComment,
@@ -19,7 +19,6 @@ const QuillEditor = dynamic(() => import('@/components/QuillEditor'), { ssr: fal
 
 // 같은 탭에서는 닉네임을 다시 입력하지 않게 하되, 공용 기기에 남지 않도록 탭을 닫으면 잊는다.
 const ANON_NICKNAME_KEY = 'featuredAnonNickname';
-const SANITIZED_MESSAGE = '안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.';
 
 function isBlank(text, rich) {
   if (!text) return true;
@@ -116,7 +115,7 @@ export default function CommentSection({ collectionName, postId, isAdmin = false
       const { contentWasSanitized } = await addComment({
         content: text, nickname, uid: currentUid, parentId,
       });
-      if (contentWasSanitized) alert(SANITIZED_MESSAGE);
+      alertIfSanitized(contentWasSanitized);
       return true;
     } catch (error) {
       alert(`저장 실패: ${error.message}`);
@@ -140,7 +139,7 @@ export default function CommentSection({ collectionName, postId, isAdmin = false
     if (!checkCommentLength(editText)) return;
     try {
       const { contentWasSanitized } = await editComment(comment.id, rich ? editText : editText.trim());
-      if (contentWasSanitized) alert(SANITIZED_MESSAGE);
+      alertIfSanitized(contentWasSanitized);
       setEditCommentId(null); setEditText('');
     } catch (error) {
       alert(`저장 실패: ${error.message}`);

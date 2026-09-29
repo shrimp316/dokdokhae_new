@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { alertIfSanitized } from '@/lib/sanitize.client';
+import { mapDocs } from '@/lib/firestore';
 import { formatDateTime } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -122,27 +124,27 @@ export default function AdminPage() {
 
   async function loadBooks() {
     const snap = await getDocs(query(collection(db, 'books'), orderBy('addedAt', 'desc')));
-    setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setBooks(mapDocs(snap));
   }
   async function loadMeetings() {
     const snap = await getDocs(query(collection(db, 'meetings'), orderBy('date', 'asc')));
-    setMeetings(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setMeetings(mapDocs(snap));
   }
   async function loadNotices() {
     const snap = await getDocs(query(collection(db, 'notices'), orderBy('createdAt', 'desc')));
-    setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setNotices(mapDocs(snap));
   }
   async function loadPrefixes() {
     try {
       const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPrefixes(mapDocs(snap));
     } catch {}
   }
 
   async function loadScheduled() {
     try {
       const snap = await getDocs(query(collection(db, 'scheduledNotifications'), orderBy('date', 'asc')));
-      setScheduled(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setScheduled(mapDocs(snap));
     } catch {}
   }
 
@@ -150,7 +152,7 @@ export default function AdminPage() {
   async function loadBookQuestions(bookId) {
     if (!bookId) { setBookQuestions([]); return; }
     const snap = await getDocs(query(collection(db, 'bookQuestions'), where('bookId', '==', bookId), orderBy('order', 'asc')));
-    setBookQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setBookQuestions(mapDocs(snap));
   }
 
   async function addQuestion() {
@@ -212,7 +214,7 @@ export default function AdminPage() {
   async function loadPassages() {
     try {
       const snap = await getDocs(query(collection(db, 'featuredPassages'), orderBy('createdAt', 'desc')));
-      setPassages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPassages(mapDocs(snap));
     } catch {}
   }
 
@@ -559,9 +561,7 @@ export default function AdminPage() {
         method: 'POST',
         body: newNotice,
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setNewNotice({ title: '', content: '', pinned: false });
       loadNotices();
       alert('공지가 등록되었어요!');
@@ -583,9 +583,7 @@ export default function AdminPage() {
         method: 'PATCH',
         body: editNotice,
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setEditingNoticeId(null);
       loadNotices();
     } catch (error) {
@@ -601,9 +599,7 @@ export default function AdminPage() {
         method: 'PATCH',
         body: { title: notice.title, content: notice.content, pinned: true },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       loadNotices();
     } catch (error) {
       alert(`고정 실패: ${error.message}`);

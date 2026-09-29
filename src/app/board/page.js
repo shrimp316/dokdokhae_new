@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { mapDocs } from '@/lib/firestore';
 import { formatMonthDay } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -10,7 +11,7 @@ import Link from 'next/link';
 import NoticeBanner from '@/components/NoticeBanner';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
-import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
+import { sanitizeHtmlForStorage, alertIfSanitized } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
 import { isEmptyRichHtml } from '@/lib/html';
 import dynamic from 'next/dynamic';
@@ -77,7 +78,7 @@ export default function BoardPage() {
         orderBy('createdAt', 'desc'),
       ));
       if (cancelled) return;
-      setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPosts(mapDocs(snap));
     }
     run();
     return () => { cancelled = true; };
@@ -99,13 +100,13 @@ export default function BoardPage() {
       collection(db, 'board'),
       orderBy('createdAt', 'desc'),
     ));
-    setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setPosts(mapDocs(snap));
   }
 
   async function loadPrefixes() {
     try {
       const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPrefixes(mapDocs(snap));
     } catch {}
   }
 
@@ -134,9 +135,7 @@ export default function BoardPage() {
         method: 'POST',
         body: { title, prefix, content },
       });
-      if (result.contentWasSanitized) {
-        alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
-      }
+      alertIfSanitized(result.contentWasSanitized);
       setTitle(''); setPrefix(''); setContent('');
       setShowForm(false);
       try { await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'board')); } catch {}
@@ -151,9 +150,7 @@ export default function BoardPage() {
   async function saveDraft() {
     if (!user) { alert('로그인 후 이용해주세요.'); return; }
     const sanitized = sanitizeHtmlForStorage(content);
-    if (sanitized.removedUnsafeContent) {
-      alert('안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 임시저장합니다.');
-    }
+    alertIfSanitized(sanitized.removedUnsafeContent, { draft: true });
     try {
       await setDoc(doc(db, 'users', user.uid, 'drafts', 'board'), {
         title, prefix, content: sanitized.html, updatedAt: serverTimestamp(),

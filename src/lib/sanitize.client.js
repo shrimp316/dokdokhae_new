@@ -108,6 +108,15 @@ export function sanitizeHtmlForStorage(html) {
   };
 }
 
+// 서버가 저장 전에 HTML을 걸러냈거나(contentWasSanitized), 임시저장 전에 여기서 걸러냈을 때
+// 사용자가 붙여넣은 서식이 왜 사라졌는지 알 수 있게 같은 문구로 알린다.
+export function alertIfSanitized(wasSanitized, { draft = false } = {}) {
+  if (!wasSanitized) return;
+  alert(draft
+    ? '안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 임시저장합니다.'
+    : '안전하지 않거나 지원되지 않는 HTML을 제거한 뒤 저장했습니다.');
+}
+
 export function dangerousHtml(html) {
   return { __html: sanitizeHtml(html) };
 }
