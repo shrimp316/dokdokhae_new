@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -35,6 +35,17 @@ async function searchKakaoBooks(query) {
   return data?.documents || [];
 }
 
+// 이달의 책·노출 중인 글처럼 하나만 켜져 있어야 하는 플래그는 기존 것 끄기와 새 것 쓰기를
+// 한 배치로 커밋해, 중간에 실패해도 0개나 2개가 되지 않게 한다.
+// 동시에 두 요청이 들어오는 경합까지는 막지 못하므로 호출하는 쪽에서 처리 중 버튼을 잠근다.
+async function commitWithExclusiveFlag(collectionName, field, applyTargetWrite) {
+  const prev = await getDocs(query(collection(db, collectionName), where(field, '==', true)));
+  const batch = writeBatch(db);
+  prev.docs.forEach(d => batch.update(d.ref, { [field]: false }));
+  applyTargetWrite(batch);
+  await batch.commit();
+}
+
 export default function AdminPage() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -66,6 +77,9 @@ export default function AdminPage() {
   const [scheduled, setScheduled] = useState([]);
   const [newNotif, setNewNotif] = useState({ title: '', body: '', date: '', url: '/' });
   const [sendingNow, setSendingNow] = useState(false);
+
+  // 이달의 책·노출 중인 글 전환이 끝나기 전에 다시 누르지 못하게 한다.
+  const [exclusiveSaving, setExclusiveSaving] = useState(false);
 
   // 책 토론 질문
   const [selectedBookForQ, setSelectedBookForQ] = useState('');
@@ -265,15 +279,23 @@ export default function AdminPage() {
     loadPassages();
   }
 
-  // 노출 중인 글은 하나뿐이어야 한다. 지금은 하나씩 갱신해서 중간에 실패하면 0개나 2개가 될 수 있으므로
-  // writeBatch로 한 번에 커밋하도록 바꿀 예정이다. (setFeatured·addBook도 같다)
+  // 노출 중인 글은 하나뿐이어야 한다. 노출을 끄는 것은 문서 하나만 바꾸므로 배치가 필요 없다.
   async function togglePassageActive(id, currentActive) {
-    if (!currentActive) {
-      const prev = await getDocs(query(collection(db, 'featuredPassages'), where('isActive', '==', true)));
-      for (const d of prev.docs) await updateDoc(doc(db, 'featuredPassages', d.id), { isActive: false });
+    if (exclusiveSaving) return;
+    setExclusiveSaving(true);
+    try {
+      const target = doc(db, 'featuredPassages', id);
+      if (currentActive) {
+        await updateDoc(target, { isActive: false });
+      } else {
+        await commitWithExclusiveFlag('featuredPassages', 'isActive', batch => batch.update(target, { isActive: true }));
+      }
+    } catch (e) {
+      alert('노출 전환 실패: ' + e.message);
+    } finally {
+      setExclusiveSaving(false);
+      loadPassages();
     }
-    await updateDoc(doc(db, 'featuredPassages', id), { isActive: !currentActive });
-    loadPassages();
   }
 
   async function saveEditPassage(id) {
@@ -474,14 +496,25 @@ export default function AdminPage() {
 
   async function addBook() {
     if (!newBook.title) { alert('제목을 입력해주세요.'); return; }
-    if (newBook.featured) {
-      const prev = await getDocs(query(collection(db, 'books'), where('featured', '==', true)));
-      for (const d of prev.docs) await updateDoc(doc(db, 'books', d.id), { featured: false });
+    if (exclusiveSaving) return;
+    setExclusiveSaving(true);
+    try {
+      const data = { ...newBook, addedAt: serverTimestamp() };
+      if (newBook.featured) {
+        // 새 책 추가도 같은 배치에 넣어, 추가에 실패하면 기존 이달의 책도 그대로 남게 한다.
+        const target = doc(collection(db, 'books'));
+        await commitWithExclusiveFlag('books', 'featured', batch => batch.set(target, data));
+      } else {
+        await addDoc(collection(db, 'books'), data);
+      }
+      setNewBook({ title: '', author: '', cover: '', genre: '', isbn: '', description: '', featured: false });
+      alert('책이 추가되었어요!');
+    } catch (e) {
+      alert('책 추가 실패: ' + e.message);
+    } finally {
+      setExclusiveSaving(false);
+      loadBooks();
     }
-    await addDoc(collection(db, 'books'), { ...newBook, addedAt: serverTimestamp() });
-    setNewBook({ title: '', author: '', cover: '', genre: '', isbn: '', description: '', featured: false });
-    loadBooks();
-    alert('책이 추가되었어요!');
   }
 
   async function deleteBook(id) {
@@ -491,10 +524,17 @@ export default function AdminPage() {
   }
 
   async function setFeatured(id) {
-    const prev = await getDocs(query(collection(db, 'books'), where('featured', '==', true)));
-    for (const d of prev.docs) await updateDoc(doc(db, 'books', d.id), { featured: false });
-    await updateDoc(doc(db, 'books', id), { featured: true });
-    loadBooks();
+    if (exclusiveSaving) return;
+    setExclusiveSaving(true);
+    try {
+      const target = doc(db, 'books', id);
+      await commitWithExclusiveFlag('books', 'featured', batch => batch.update(target, { featured: true }));
+    } catch (e) {
+      alert('이달의 책 설정 실패: ' + e.message);
+    } finally {
+      setExclusiveSaving(false);
+      loadBooks();
+    }
   }
 
   async function addMeeting() {
@@ -666,7 +706,7 @@ export default function AdminPage() {
             <input type="checkbox" id="featured" checked={newBook.featured} onChange={e => setNewBook({...newBook, featured: e.target.checked})} className={styles.checkbox} />
             <label htmlFor="featured" className={styles.checkboxLabel}><Star size={13} fill="currentColor" /> 이 달의 책으로 설정</label>
           </div>
-          <button className="btn-primary" onClick={addBook}>책 추가</button>
+          <button className="btn-primary" onClick={addBook} disabled={exclusiveSaving}>책 추가</button>
           <div className={styles.mt14}>
             {books.map(b => (
               <div key={b.id} className={styles.listItem}>
@@ -675,7 +715,7 @@ export default function AdminPage() {
                   <div className={styles.listTitle}>{b.title}</div>
                   <div className={styles.listSubtitle}>{b.author} {b.featured && <>· <Star size={11} fill="currentColor" /> 이달의 책</>}</div>
                 </div>
-                {!b.featured && <button className="btn-sm btn-outline" onClick={() => setFeatured(b.id)}>이달의 책</button>}
+                {!b.featured && <button className="btn-sm btn-outline" onClick={() => setFeatured(b.id)} disabled={exclusiveSaving}>이달의 책</button>}
                 <button className="btn-sm btn-danger" onClick={() => deleteBook(b.id)}>삭제</button>
               </div>
             ))}
@@ -987,7 +1027,7 @@ export default function AdminPage() {
                         <span className={`${styles.mutedTiny} ${styles.shrink0}`}>{p.periodKey}</span>
                         <span className={styles.passageBookTitle}>{p.bookTitle}</span>
                         <button className={`btn-sm btn-outline ${styles.shrink0} ${styles.passageToggleBtn}`} onClick={() => togglePassageActive(p.id, p.isActive)}
-                          data-active={p.isActive || undefined}>
+                          disabled={exclusiveSaving} data-active={p.isActive || undefined}>
                           {p.isActive ? <><CheckCircle2 size={12} /> 노출 중</> : '노출'}
                         </button>
                         <button className={`btn-sm btn-outline ${styles.shrink0}`} onClick={() => { setEditingPassageId(p.id); setEditPassage({ bookTitle: p.bookTitle || '', bookAuthor: p.bookAuthor || '', kind: p.kind || 'curator_intro', excerpt: p.excerpt || '', curatorNote: p.curatorNote || '', passage: p.passage || '', questions: p.questions || [], source: p.source || '', sourceType: p.sourceType || 'manual', sourceUrl: p.sourceUrl || '', publicDomain: !!p.publicDomain }); setEditPassageQuestion(''); }}>수정</button>
