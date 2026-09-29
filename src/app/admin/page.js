@@ -29,6 +29,12 @@ const INITIAL_PASSAGE = {
   aiGeneratedQuestions: false,
 };
 
+// 카카오 REST 키는 서버에만 두고, 브라우저는 관리자 인증을 거치는 /api/book-search를 통해서만 검색한다.
+async function searchKakaoBooks(query) {
+  const data = await authenticatedJsonFetch(`/api/book-search?q=${encodeURIComponent(query.trim())}`);
+  return data?.documents || [];
+}
+
 export default function AdminPage() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
@@ -337,11 +343,7 @@ export default function AdminPage() {
   async function searchKakaoForPassage() {
     if (!passageBookSearch.trim()) return;
     try {
-      const res = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(passageBookSearch)}&size=5`, {
-        headers: { Authorization: `KakaoAK ${process.env.NEXT_PUBLIC_KAKAO_API_KEY}` }
-      });
-      const data = await res.json();
-      setPassageKakaoResults(data.documents || []);
+      setPassageKakaoResults(await searchKakaoBooks(passageBookSearch));
     } catch (e) { alert('검색 실패: ' + e.message); }
   }
 
@@ -458,16 +460,10 @@ export default function AdminPage() {
     setSendingNow(false);
   }
 
-  // 카카오 검색은 브라우저에서 바로 호출해 API 키가 노출된다. pd-search처럼 서버 라우트로 옮기면서
-  // searchKakaoForPassage와 하나로 합칠 예정이다.
   async function searchKakao() {
     if (!bookSearch.trim()) return;
     try {
-      const res = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(bookSearch)}&size=5`, {
-        headers: { Authorization: `KakaoAK ${process.env.NEXT_PUBLIC_KAKAO_API_KEY}` }
-      });
-      const data = await res.json();
-      setSearchResults(data.documents || []);
+      setSearchResults(await searchKakaoBooks(bookSearch));
     } catch (e) { alert('검색 실패: ' + e.message); }
   }
 

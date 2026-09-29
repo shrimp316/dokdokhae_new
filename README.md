@@ -30,7 +30,7 @@ cp .env.local.example .env.local
 | 변수 | 용도 |
 | --- | --- |
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase Web SDK 설정 (브라우저에 노출되어도 안전, Google Cloud에서 도메인/API 제한 권장) |
-| `NEXT_PUBLIC_KAKAO_API_KEY` | 관리자 페이지의 카카오 도서 검색 |
+| `KAKAO_REST_API_KEY` | 관리자 페이지의 카카오 도서 검색 (`/api/book-search`) — 서버 전용. 기존 `NEXT_PUBLIC_KAKAO_API_KEY`도 서버에서 대체값으로 읽는다 |
 | `ANTHROPIC_API_KEY` | AI 질문/발췌 생성 (`/api/ai-questions`, `/api/ai-passage`) — 서버 전용 |
 | `CRON_SECRET` | 예약 알림 발송 크론(`/api/cron`) 인증 — 서버 전용 |
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | Firebase Admin SDK 서비스 계정 JSON — 서버 전용 |
