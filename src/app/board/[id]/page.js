@@ -2,6 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+import { formatMonthDay } from '@/lib/format';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLikes } from '@/lib/usePostInteractions';
@@ -91,8 +92,6 @@ export default function BoardPostPage({ params }) {
     shareLink({ title: post.title, url: window.location.href });
   }
 
-  const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
-
   if (!post) return <div className="empty-msg">로딩 중…</div>;
 
   const isAdmin = profile?.role === 'admin';
@@ -137,7 +136,7 @@ export default function BoardPostPage({ params }) {
               <h1 className={styles.postTitle}>{post.title}</h1>
             </div>
             <div className={styles.postMeta}>
-              {post.nickname} · {formatDate(post.createdAt)}
+              {post.nickname} · {formatMonthDay(post.createdAt)}
               {post.updatedAt && <span> (수정됨)</span>}
             </div>
             <ContentLightbox

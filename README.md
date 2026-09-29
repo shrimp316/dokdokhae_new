@@ -57,7 +57,7 @@ npm run dev
 | `npm run build` | 프로덕션 빌드 |
 | `npm start` | 빌드된 앱 실행 |
 | `npm run lint` | ESLint 검사 |
-| `npm test` | 전체 테스트 실행 (`sanitize`, `cover-proxy`, `nicknames`, `comment-policy`, `html`, `share`) |
+| `npm test` | 전체 테스트 실행 (`sanitize`, `cover-proxy`, `nicknames`, `comment-policy`, `html`, `share`, `format`) |
 
 ## 프로젝트 구조
 

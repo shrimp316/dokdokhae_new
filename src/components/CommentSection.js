@@ -3,6 +3,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatMonthDay } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import { useComments } from '@/lib/usePostInteractions';
 import { dangerousHtml } from '@/lib/sanitize.client';
@@ -68,8 +69,6 @@ function saveAnonNickname(name) {
     }
   } catch {}
 }
-
-const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth() + 1}/${ts.toDate().getDate()}` : '';
 
 // 버튼 클릭이 바깥 카드(예: 감상평 카드 펼치기)로 전파되지 않게 한다.
 const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
@@ -256,7 +255,7 @@ function CommentRow({ comment, ctx }) {
         <div className={styles.itemMeta}>
           <span className={styles.itemNickname}>{comment.nickname}</span>
           {comment.isAnonymous && <span className={styles.anonBadge}>비회원</span>}
-          <span className={styles.itemDate}>{formatDate(comment.createdAt)}</span>
+          <span className={styles.itemDate}>{formatMonthDay(comment.createdAt)}</span>
         </div>
         {editing ? (
           rich ? (

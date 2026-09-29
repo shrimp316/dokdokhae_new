@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatDate, formatDotDate, formatTime } from '@/lib/format';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dangerousHtml } from '@/lib/sanitize.client';
@@ -9,21 +10,6 @@ import ContentLightbox from '@/components/ContentLightbox';
 import { bookColors } from '@/lib/bookColors';
 import { Pin, X, ArrowRight } from 'lucide-react';
 import styles from './page.module.css';
-
-function formatKDate(str) {
-  if (!str) return '';
-  const d = new Date(str);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-function formatKTime(str) {
-  if (!str) return '';
-  const d = new Date(str);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${hh}:${mi}`;
-}
 
 function MonthIssue({ featured }) {
   const c = bookColors(featured);
@@ -184,10 +170,10 @@ export default function HomePage() {
                     {ddayLabel}
                   </div>
                   <div className={styles.meetingDate}>
-                    {formatKDate(nextMeeting.date)}
+                    {formatDate(nextMeeting.date)}
                   </div>
                   <div className={styles.meetingTime}>
-                    {formatKTime(nextMeeting.date)}
+                    {formatTime(nextMeeting.date)}
                     {nextMeeting.location ? ` · ${nextMeeting.location}` : ''}
                   </div>
                 </div>
@@ -267,9 +253,7 @@ export default function HomePage() {
                   {n.title}
                 </div>
                 <div className={styles.noticeRowDate}>
-                  {n.createdAt?.toDate
-                    ? `${n.createdAt.toDate().getFullYear()}.${n.createdAt.toDate().getMonth() + 1}.${n.createdAt.toDate().getDate()}`
-                    : ''}
+                  {formatDotDate(n.createdAt)}
                 </div>
               </div>
             </Link>

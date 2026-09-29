@@ -2,6 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatDotDate } from '@/lib/format';
 import Link from 'next/link';
 import { dangerousHtml } from '@/lib/sanitize.client';
 import ContentLightbox from '@/components/ContentLightbox';
@@ -20,8 +21,6 @@ export default function NoticePostPage({ params }) {
 
   if (!post) return <div className="empty-msg">로딩 중…</div>;
 
-  const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getFullYear()}.${ts.toDate().getMonth()+1}.${ts.toDate().getDate()}` : '';
-
   return (
     <div>
       <Link href="/notice" className={styles.backLink}>
@@ -31,7 +30,7 @@ export default function NoticePostPage({ params }) {
         {post.pinned && <div className={styles.pinnedTag}><Pin size={11} /> 고정 공지</div>}
         <h1 className={styles.title}>{post.title}</h1>
         <div className={styles.meta}>
-          {formatDate(post.createdAt)}
+          {formatDotDate(post.createdAt)}
         </div>
         <ContentLightbox contentClassName={`notice-content ${styles.body}`}>
           <div dangerouslySetInnerHTML={dangerousHtml(post.content)} />

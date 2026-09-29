@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { formatMonthDay } from '@/lib/format';
 import { Bell, MessageCircle, Reply, Heart, CheckCheck } from 'lucide-react';
 import styles from './NotificationBell.module.css';
 
@@ -23,12 +24,6 @@ function notifUrl(n) {
   if (n.collectionName === 'board') return `/board/${n.postId}`;
   if (n.collectionName === 'reviews') return `/books/${n.bookId}`;
   return `/featured/${n.postId}`;
-}
-
-function formatDate(ts) {
-  if (!ts?.toDate) return '';
-  const d = ts.toDate();
-  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 export default function NotificationBell() {
@@ -123,7 +118,7 @@ export default function NotificationBell() {
                         </span>
                       )}
                       <span className={styles.itemDate}>
-                        {formatDate(n.createdAt)}
+                        {formatMonthDay(n.createdAt)}
                       </span>
                     </span>
                     {!n.read && (

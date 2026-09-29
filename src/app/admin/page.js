@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+import { formatDateTime } from '@/lib/format';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -620,12 +621,6 @@ export default function AdminPage() {
     await deleteDoc(doc(db, 'boardPrefixes', id));
     loadPrefixes();
   }
-
-  const formatDateTime = (str) => {
-    if (!str) return '';
-    const d = new Date(str);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`;
-  };
 
   if (loading) return <p className="empty-msg">로딩 중…</p>;
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, collectionGroup, updateDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { db } from '@/lib/firebase';
+import { formatMonthDay } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -69,8 +70,6 @@ export default function MyPage() {
     if (c.parentCol === 'featuredPassages') return `/featured/${c.postId}`;
     return `/board/${c.postId}`;
   }
-
-  const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getMonth()+1}/${ts.toDate().getDate()}` : '';
 
   async function saveNickname(e) {
     e.preventDefault();
@@ -200,7 +199,7 @@ export default function MyPage() {
                   {p.prefix && <span className={styles.prefixTag}>{p.prefix}</span>}
                   <span className={styles.postTitle}>{p.title}</span>
                 </div>
-                <div className={styles.postDate}>{formatDate(p.createdAt)}</div>
+                <div className={styles.postDate}>{formatMonthDay(p.createdAt)}</div>
               </div>
             </Link>
           ))
@@ -219,7 +218,7 @@ export default function MyPage() {
                 <div className={styles.commentPreview}>
                   {stripHtml(c.content).slice(0, COMMENT_PREVIEW_LEN)}{stripHtml(c.content).length > COMMENT_PREVIEW_LEN ? '…' : ''}
                 </div>
-                <div className={styles.postDate}>{formatDate(c.createdAt)}</div>
+                <div className={styles.postDate}>{formatMonthDay(c.createdAt)}</div>
               </div>
             </Link>
           ))

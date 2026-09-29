@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatDotDate } from '@/lib/format';
 import Link from 'next/link';
 import { Pin } from 'lucide-react';
 import styles from './notice-list.module.css';
@@ -14,8 +15,6 @@ export default function NoticePage() {
       .then(snap => setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   }, []);
 
-  const formatDate = (ts) => ts?.toDate ? `${ts.toDate().getFullYear()}.${ts.toDate().getMonth()+1}.${ts.toDate().getDate()}` : '';
-
   return (
     <div>
       <div className="section-title">공지사항</div>
@@ -27,7 +26,7 @@ export default function NoticePage() {
             <div className={`post-card ${p.pinned ? 'pinned' : ''}`}>
               {p.pinned && <div className={styles.pinnedTag}><Pin size={11} /> 고정</div>}
               <div className={styles.title}>{p.title}</div>
-              <div className={styles.date}>{formatDate(p.createdAt)}</div>
+              <div className={styles.date}>{formatDotDate(p.createdAt)}</div>
             </div>
           </Link>
         ))

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+import { formatMonthDay } from '@/lib/format';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -274,7 +275,7 @@ export default function BoardPage() {
                   <span className={styles.rowTitleText}>{p.title}</span>
                 </span>
                 <span className={styles.rowAuthor}>{p.nickname}</span>
-                <span className={styles.rowDate}>{p.createdAt?.toDate ? `${p.createdAt.toDate().getMonth()+1}/${p.createdAt.toDate().getDate()}` : ''}</span>
+                <span className={styles.rowDate}>{formatMonthDay(p.createdAt)}</span>
               </div>
             </Link>
           ))}
@@ -295,7 +296,7 @@ export default function BoardPage() {
                     <div className={styles.photoCardTitle}>{p.title}</div>
                     <div className={styles.photoCardMeta}>
                       <span>{p.nickname}</span>
-                      <span>{p.createdAt?.toDate ? `${p.createdAt.toDate().getMonth()+1}/${p.createdAt.toDate().getDate()}` : ''}</span>
+                      <span>{formatMonthDay(p.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -313,7 +314,7 @@ export default function BoardPage() {
               </div>
               <div className={styles.textCardMeta}>
                 <span>{p.nickname}</span>
-                <span>{p.createdAt?.toDate ? `${p.createdAt.toDate().getMonth()+1}/${p.createdAt.toDate().getDate()}` : ''}</span>
+                <span>{formatMonthDay(p.createdAt)}</span>
               </div>
             </div>
           </Link>

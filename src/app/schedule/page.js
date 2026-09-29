@@ -2,16 +2,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { formatDateTime } from '@/lib/format';
 import NoticeBanner from '@/components/NoticeBanner';
 import MonthCalendar from '@/components/MonthCalendar';
 import { BookOpen } from 'lucide-react';
 import styles from './schedule.module.css';
-
-function formatDateTime(str) {
-  if (!str) return '';
-  const d = new Date(str);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:00`;
-}
 
 function isSameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
