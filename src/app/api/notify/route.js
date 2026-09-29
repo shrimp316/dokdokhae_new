@@ -2,15 +2,10 @@ import { NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { stripHtml } from '@/lib/searchUtils';
 import { getAdminDb, getAdminMessaging, requireAuthenticatedUser } from '@/lib/firebaseAdmin';
+import { postPath } from '@/lib/routes';
 
 const PREVIEW_LEN = 60;
 const VALID_COLLECTIONS = ['board', 'reviews', 'featuredPassages'];
-
-function postUrl(collectionName, postId, bookId) {
-  if (collectionName === 'board') return `/board/${postId}`;
-  if (collectionName === 'reviews') return `/books/${bookId}`;
-  return `/featured/${postId}`;
-}
 
 async function resolveComment(db, { collectionName, postId, commentId }) {
   const commentSnap = await db.collection(collectionName).doc(postId)
@@ -147,7 +142,7 @@ export async function POST(request) {
       });
     }
     if (token && shouldSendPush) {
-      const url = postUrl(collectionName, postId, resolved.bookId);
+      const url = postPath({ collectionName, postId, bookId: resolved.bookId });
       const titleByType = {
         comment: `${resolved.actorNickname}님이 댓글을 남겼어요`,
         reply: `${resolved.actorNickname}님이 답글을 남겼어요`,

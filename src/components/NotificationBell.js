@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { postPath } from '@/lib/routes';
 import { formatMonthDay } from '@/lib/format';
 import { Bell, MessageCircle, Reply, Heart, CheckCheck } from 'lucide-react';
 import styles from './NotificationBell.module.css';
@@ -18,13 +19,6 @@ const ICON_BY_TYPE = {
   reply: Reply,
   like: Heart,
 };
-
-// 감상평은 단독 페이지가 없어 해당 책 페이지로 보낸다.
-function notifUrl(n) {
-  if (n.collectionName === 'board') return `/board/${n.postId}`;
-  if (n.collectionName === 'reviews') return `/books/${n.bookId}`;
-  return `/featured/${n.postId}`;
-}
 
 export default function NotificationBell() {
   const router = useRouter();
@@ -44,7 +38,7 @@ export default function NotificationBell() {
   function handleItemClick(n) {
     markRead(n.id);
     setOpen(false);
-    router.push(notifUrl(n));
+    router.push(postPath(n));
   }
 
   return (

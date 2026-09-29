@@ -4,6 +4,7 @@ import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy,
 import { db } from '@/lib/firebase';
 import { alertIfSanitized } from '@/lib/sanitize.client';
 import { mapDocs } from '@/lib/firestore';
+import { usePrefixes } from '@/hooks/usePrefixes';
 import { formatDateTime } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -73,7 +74,7 @@ export default function AdminPage() {
   const [editNotice, setEditNotice] = useState({ title: '', content: '', pinned: false });
 
   // 글머리
-  const [prefixes, setPrefixes] = useState([]);
+  const { prefixes, reload: loadPrefixes } = usePrefixes();
   const [newPrefix, setNewPrefix] = useState('');
 
   // 예약 알림
@@ -119,7 +120,7 @@ export default function AdminPage() {
   }, [isAdmin, tab]);
 
   function loadAll() {
-    loadBooks(); loadMeetings(); loadNotices(); loadPrefixes(); loadScheduled(); loadPassages();
+    loadBooks(); loadMeetings(); loadNotices(); loadScheduled(); loadPassages();
   }
 
   async function loadBooks() {
@@ -133,12 +134,6 @@ export default function AdminPage() {
   async function loadNotices() {
     const snap = await getDocs(query(collection(db, 'notices'), orderBy('createdAt', 'desc')));
     setNotices(mapDocs(snap));
-  }
-  async function loadPrefixes() {
-    try {
-      const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(mapDocs(snap));
-    } catch {}
   }
 
   async function loadScheduled() {

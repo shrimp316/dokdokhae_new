@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { generateText } from '@/lib/ai';
 import { requireAdminUser } from '@/lib/firebaseAdmin';
 import {
   CONTENT_LIMITS,
@@ -14,14 +15,6 @@ export async function POST(request) {
     const authResult = await requireAdminUser(request);
     if (authResult.response) return authResult.response;
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'AI API 키가 설정되지 않았습니다. 환경변수 ANTHROPIC_API_KEY를 설정해주세요.' },
-        { status: 503 }
-      );
-    }
-
     const body = await readJsonBody(request);
     const { kind } = body;
 
@@ -36,9 +29,6 @@ export async function POST(request) {
     if (kind === 'public_domain' && !excerpt) {
       throw new ContentApiError(400, 'public_domain 모드는 원문 발췌(excerpt)가 필요합니다.');
     }
-
-    const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const client = new Anthropic({ apiKey });
 
     // curator_intro는 저작권이 살아 있는 책이므로, AI가 원문을 인용하거나 없는 구절을 지어내지 않도록 규칙을 강하게 건다.
     let prompt;
@@ -98,13 +88,7 @@ ${excerpt}
 (세 번째 토론 질문)`;
     }
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].text.trim();
+    const text = await generateText(prompt, { maxTokens: 1500 });
 
     const noteMatch = text.match(/\[코멘트\]\s*([\s\S]*?)(?=\[질문1\]|$)/);
     const q1Match = text.match(/\[질문1\]\s*([\s\S]*?)(?=\[질문2\]|$)/);

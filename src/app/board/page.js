@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { mapDocs } from '@/lib/firestore';
+import { usePrefixes } from '@/hooks/usePrefixes';
 import { formatMonthDay } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -48,15 +49,11 @@ export default function BoardPage() {
   const [prefix, setPrefix] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [prefixes, setPrefixes] = useState([]);
+  const { prefixes } = usePrefixes();
   const [filterPrefix, setFilterPrefix] = useState('');
   const [draft, setDraft] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewModeState] = useState('text');
-
-  useEffect(() => {
-    loadPrefixes();
-  }, []);
 
   useEffect(() => {
     try {
@@ -101,13 +98,6 @@ export default function BoardPage() {
       orderBy('createdAt', 'desc'),
     ));
     setPosts(mapDocs(snap));
-  }
-
-  async function loadPrefixes() {
-    try {
-      const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(mapDocs(snap));
-    } catch {}
   }
 
   // 글 수가 적어 전체를 받아 브라우저에서 검색·페이징한다. 글이 많아지면 저장할 때 검색용 평문과

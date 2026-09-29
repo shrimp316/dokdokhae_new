@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { mapDocs } from '@/lib/firestore';
+import { usePrefixes } from '@/hooks/usePrefixes';
 import { formatMonthDay } from '@/lib/format';
 import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
@@ -33,13 +33,12 @@ export default function BoardPostPage({ params }) {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editPrefix, setEditPrefix] = useState('');
-  const [prefixes, setPrefixes] = useState([]);
+  const { prefixes } = usePrefixes();
 
   const { liked, likeCount, toggleLike } = useLikes('board', id, user);
 
   useEffect(() => {
     loadPost();
-    loadPrefixes();
   }, [id]);
 
   async function loadPost() {
@@ -50,13 +49,6 @@ export default function BoardPostPage({ params }) {
     setEditTitle(data.title);
     setEditContent(data.content);
     setEditPrefix(data.prefix || '');
-  }
-
-  async function loadPrefixes() {
-    try {
-      const snap = await getDocs(collection(db, 'boardPrefixes'));
-      setPrefixes(mapDocs(snap));
-    } catch {}
   }
 
   async function handleToggleLike() {

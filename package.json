@@ -16,7 +16,8 @@
     "test:format": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/format.test.mjs",
     "test:image-policy": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/image-policy.test.mjs",
     "test:cleanup-helpers": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/cleanup-helpers.test.mjs",
-    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames && npm run test:comment-policy && npm run test:html && npm run test:share && npm run test:format && npm run test:image-policy && npm run test:cleanup-helpers"
+    "test:server-helpers": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/server-helpers.test.mjs",
+    "test": "npm run test:sanitize && npm run test:cover-proxy && npm run test:nicknames && npm run test:comment-policy && npm run test:html && npm run test:share && npm run test:format && npm run test:image-policy && npm run test:cleanup-helpers && npm run test:server-helpers"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.server';
 import { ANON_NICKNAME_MAX, COMMENT_MAX_LENGTH } from '@/lib/commentPolicy';
 import { isEmptyRichHtml } from '@/lib/html';
+import { ContentApiError } from '@/lib/contentApiError';
+
+export { ContentApiError };
 
 export const CONTENT_LIMITS = {
   title: 200,
@@ -16,14 +19,6 @@ export const CONTENT_LIMITS = {
   bookDescription: 5_000,
   aiExcerpt: 5_000,
 };
-
-export class ContentApiError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.name = 'ContentApiError';
-    this.status = status;
-  }
-}
 
 export async function readJsonBody(request) {
   let body;
