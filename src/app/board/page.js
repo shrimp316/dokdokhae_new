@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, serverTimestamp, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { formatMonthDay } from '@/lib/format';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -226,11 +226,7 @@ export default function BoardPage() {
               onChange={setContent}
               placeholder="내용을 입력해주세요…"
               minHeight={160}
-              onImageUpload={async (file) => {
-                const r = ref(storage, `board/${Date.now()}_${file.name}`);
-                await uploadBytes(r, file);
-                return getDownloadURL(r);
-              }}
+              onImageUpload={(file) => uploadImage('board', file)}
             />
           </div>
           <div className={styles.formActions}>

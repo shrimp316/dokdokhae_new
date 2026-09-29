@@ -2,32 +2,22 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import 'react-quill-new/dist/quill.snow.css';
 import { Lightbulb } from 'lucide-react';
+import { UPLOAD_MIMETYPES, checkImageFiles } from '@/lib/imagePolicy';
 import styles from './QuillEditor.module.css';
 
 const SIZE_LIST = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
 
-// 붙여넣기·끌어놓기로 올릴 수 있는 이미지 형식 (Storage 규칙의 허용 형식과 맞춘다)
-const UPLOAD_MIMETYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const SUPPORTED_IMAGE_LABEL = 'JPG, PNG, GIF, WebP';
-
-// 아이폰 사진(HEIC)처럼 자주 올리는 형식이 왜 안 되는지 알 수 있게 걸린 형식 이름을 함께 보여준다.
-function unsupportedFileMessage(files) {
-  const kinds = [...new Set(files.map((file) => {
-    const ext = file.name?.includes('.') ? file.name.split('.').pop() : '';
-    return (file.type ? file.type.split('/').pop().split('+')[0] : ext).toUpperCase() || '알 수 없음';
-  }))];
-  return `지원하지 않는 형식이에요. (${kinds.join(', ')})\n사용할 수 있는 이미지 형식: ${SUPPORTED_IMAGE_LABEL}`;
-}
-
-// Quill 업로더는 지원하지 않는 형식을 말없이 버리므로, 버리기 전에 사용자에게 먼저 안내한다.
-// 이미지 업로드가 연결되지 않은 에디터(댓글 등)에서는 형식 안내 대신 기존 동작을 그대로 둔다.
-function guardUnsupportedFiles(uploader, isUploadEnabled, notify = alert) {
+// Quill 업로더는 지원하지 않는 형식을 말없이 버리므로, 버리기 전에 이미지 버튼과 같은 기준으로
+// 걸러 사용자에게 먼저 안내한다. 너무 큰 파일도 여기서 빼서 Storage에 보내지 않는다.
+// 이미지 업로드가 연결되지 않은 에디터(댓글 등)에서는 안내 대신 기존 동작을 그대로 둔다.
+function guardUploadFiles(uploader, isUploadEnabled, notify = alert) {
   const originalUpload = uploader.upload;
   uploader.upload = function upload(range, files) {
-    const list = Array.from(files);
+    let list = Array.from(files);
     if (isUploadEnabled()) {
-      const rejected = list.filter((file) => !UPLOAD_MIMETYPES.includes(file.type));
-      if (rejected.length > 0) notify(unsupportedFileMessage(rejected));
+      const { accepted, message } = checkImageFiles(list);
+      if (message) notify(message);
+      list = accepted;
     }
     return originalUpload.call(this, range, list);
   };
@@ -102,48 +92,45 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
     return at + 2;
   }, []);
 
-  const onFileChosen = useCallback(async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (!UPLOAD_MIMETYPES.includes(file.type)) {
-      alert(unsupportedFileMessage([file]));
-      return;
-    }
-    const quill = getQuill();
-    if (!quill) return;
-    let range = quill.getSelection(true);
-    if (!range) range = { index: quill.getLength(), length: 0 };
-    try {
-      const url = await onImageUploadRef.current(file);
-      if (!url) return;
-      insertUploadedImage(quill, url, range.index);
-    } catch (err) {
-      console.error('image upload failed', err);
-      alert('이미지 업로드에 실패했어요.');
-    }
-  }, [getQuill, insertUploadedImage]);
-
-  // 붙여넣기·끌어놓기로 들어온 이미지. Quill 기본 동작은 이미지를 base64로 본문에 넣는데,
-  // 그러면 서버의 글자 수 제한을 넘고 sanitize에서도 제거된다.
-  // 이미지 버튼과 똑같이 업로드한 뒤 주소(URL)만 본문에 넣는다.
-  const uploadDroppedImages = useCallback(async (quill, range, files) => {
+  // 이미지 버튼과 붙여넣기·끌어놓기가 모두 이 함수로 올리고 넣는다. 두 경로의 결과가 같도록
+  // 선택한 글자는 이미지로 바꾸고, 여러 장이면 차례로 넣고, 실패는 끝에 한 번만 알린다.
+  // (Quill 기본 동작은 붙여넣은 이미지를 base64로 본문에 넣는데, 그러면 서버의 글자 수 제한을 넘고
+  // sanitize에서도 제거되므로 업로드한 뒤 주소(URL)만 넣는다.)
+  const uploadImages = useCallback(async (quill, range, files) => {
     if (!onImageUploadRef.current) {
       alert('이미지 업로드가 지원되지 않습니다.');
       return;
     }
     let index = range.index;
     if (range.length > 0) quill.deleteText(range.index, range.length, 'user');
+    let failed = 0;
     for (const file of files) {
       try {
         const url = await onImageUploadRef.current(file);
         if (url) index = insertUploadedImage(quill, url, index);
       } catch (err) {
         console.error('image upload failed', err);
-        alert('이미지 업로드에 실패했어요.');
+        failed += 1;
       }
     }
+    if (failed > 0) {
+      alert(files.length > 1 ? `이미지 ${failed}장을 올리지 못했어요.` : '이미지 업로드에 실패했어요.');
+    }
   }, [insertUploadedImage]);
+
+  // 붙여넣기·끌어놓기는 guardUploadFiles가 거르므로, 이미지 버튼도 같은 기준으로 거른 뒤 올린다.
+  const onFileChosen = useCallback(async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    const { accepted, message } = checkImageFiles(files);
+    if (message) alert(message);
+    if (accepted.length === 0) return;
+    const quill = getQuill();
+    if (!quill) return;
+    const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+    await uploadImages(quill, range, accepted);
+  }, [getQuill, uploadImages]);
 
   const modules = useMemo(() => ({
     toolbar: {
@@ -162,16 +149,16 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
       mimetypes: UPLOAD_MIMETYPES,
       // Quill이 this를 Uploader 모듈로 지정해 호출하므로 화살표 함수가 아니라 메서드로 둔다.
       handler(range, files) {
-        uploadDroppedImages(this.quill, range, files);
+        uploadImages(this.quill, range, files);
       },
     },
-  }), [handleImageClick, uploadDroppedImages]);
+  }), [handleImageClick, uploadImages]);
 
   useEffect(() => {
     if (!ReactQuill) return;
     const uploader = getQuill()?.uploader;
     if (!uploader) return;
-    return guardUnsupportedFiles(uploader, () => !!onImageUploadRef.current);
+    return guardUploadFiles(uploader, () => !!onImageUploadRef.current);
   }, [ReactQuill, getQuill]);
 
   // iOS에서 한글 조합 중에 onChange를 부모로 올리면 자모가 분리된다.
@@ -300,6 +287,7 @@ export default function QuillEditor({ value, onChange, placeholder, minHeight = 
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         onChange={onFileChosen}
         className={styles.hiddenInput}
       />

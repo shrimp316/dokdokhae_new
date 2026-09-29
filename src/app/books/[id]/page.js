@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
+import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -55,12 +55,6 @@ export default function BookReviewsPage({ params }) {
   async function loadReviews() {
     const snap = await getDocs(query(collection(db, 'reviews'), where('bookId', '==', id), orderBy('createdAt', 'desc')));
     setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  }
-
-  async function uploadImage(file) {
-    const r = ref(storage, `reviews/${Date.now()}_${file.name}`);
-    await uploadBytes(r, file);
-    return getDownloadURL(r);
   }
 
   async function handleSubmit() {
@@ -179,7 +173,7 @@ export default function BookReviewsPage({ params }) {
               onChange={setContent}
               placeholder="이 책 어떠셨나요? 자유롭게 적어주세요!"
               minHeight={160}
-              onImageUpload={uploadImage}
+              onImageUpload={(file) => uploadImage('reviews', file)}
             />
           </div>
 
@@ -223,7 +217,7 @@ export default function BookReviewsPage({ params }) {
                 onChange={setEditContent}
                 placeholder="내용 수정…"
                 minHeight={120}
-                onImageUpload={uploadImage}
+                onImageUpload={(file) => uploadImage('reviews', file)}
               />
               <div className={styles.editActions}>
                 <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>

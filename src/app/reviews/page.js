@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '@/lib/firebase';
+import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -124,11 +124,7 @@ export default function ReviewsPage() {
                 onChange={setEditContent}
                 placeholder="수정할 내용…"
                 minHeight={120}
-                onImageUpload={async (file) => {
-                  const fr = ref(storage, `reviews/${Date.now()}_${file.name}`);
-                  await uploadBytes(fr, file);
-                  return getDownloadURL(fr);
-                }}
+                onImageUpload={(file) => uploadImage('reviews', file)}
               />
               <div className={styles.editActions}>
                 <button className="btn-sm btn-outline" onClick={() => setEditingId(null)}>취소</button>

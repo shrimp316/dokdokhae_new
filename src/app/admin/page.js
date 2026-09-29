@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, orderBy, where, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { formatDateTime } from '@/lib/format';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -1086,11 +1086,7 @@ export default function AdminPage() {
               onChange={v => setNewNotice({...newNotice, content: v})}
               placeholder="공지 내용…"
               minHeight={120}
-              onImageUpload={async (file) => {
-                const r = ref(storage, `notices/${Date.now()}_${file.name}`);
-                await uploadBytes(r, file);
-                return getDownloadURL(r);
-              }}
+              onImageUpload={(file) => uploadImage('notices', file)}
             />
           </div>
           <div className={styles.checkboxRow}>
@@ -1111,11 +1107,7 @@ export default function AdminPage() {
                         onChange={v => setEditNotice({...editNotice, content: v})}
                         placeholder="내용…"
                         minHeight={100}
-                        onImageUpload={async (file) => {
-                          const r = ref(storage, `notices/${Date.now()}_${file.name}`);
-                          await uploadBytes(r, file);
-                          return getDownloadURL(r);
-                        }}
+                        onImageUpload={(file) => uploadImage('notices', file)}
                       />
                     </div>
                     <div className={styles.checkboxRowTight}>

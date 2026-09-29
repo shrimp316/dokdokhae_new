@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useState, use } from 'react';
 import { doc, getDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { formatMonthDay } from '@/lib/format';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadImage } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useLikes } from '@/lib/usePostInteractions';
 import { useRouter } from 'next/navigation';
@@ -118,11 +118,7 @@ export default function BoardPostPage({ params }) {
               onChange={setEditContent}
               placeholder="내용…"
               minHeight={200}
-              onImageUpload={async (file) => {
-                const r = ref(storage, `board/${Date.now()}_${file.name}`);
-                await uploadBytes(r, file);
-                return getDownloadURL(r);
-              }}
+              onImageUpload={(file) => uploadImage('board', file)}
             />
             <div className={styles.editActions}>
               <button className="btn-sm btn-outline" onClick={() => setEditing(false)}>취소</button>
