@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import ReviewCard from '@/components/ReviewCard';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { isEmptyRichHtml } from '@/lib/html';
 import { ArrowLeft, Library, MessageCircle, Pencil, Star, Save } from 'lucide-react';
 import styles from './book-detail.module.css';
 
@@ -65,7 +66,7 @@ export default function BookReviewsPage({ params }) {
   async function handleSubmit() {
     if (!user) { router.push('/login'); return; }
     if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
-    if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    if (isEmptyRichHtml(content)) { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
     try {
       const result = await authenticatedJsonFetch('/api/content/reviews', {
@@ -90,7 +91,7 @@ export default function BookReviewsPage({ params }) {
   }
 
   async function handleEdit(reviewId) {
-    if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    if (isEmptyRichHtml(editContent)) { alert('내용을 입력해주세요.'); return; }
     try {
       const result = await authenticatedJsonFetch(`/api/content/reviews/${encodeURIComponent(reviewId)}`, {
         method: 'PATCH',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.server';
 import { ANON_NICKNAME_MAX, COMMENT_MAX_LENGTH } from '@/lib/commentPolicy';
+import { isEmptyRichHtml } from '@/lib/html';
 
 export const CONTENT_LIMITS = {
   title: 200,
@@ -91,16 +92,6 @@ export function documentId(value, field = 'id') {
   const id = requiredString(value, field, CONTENT_LIMITS.documentId);
   if (id.includes('/')) throw new ContentApiError(400, `${field} is invalid`);
   return id;
-}
-
-function isEmptyRichHtml(html) {
-  if (/<img\b/i.test(html)) return false;
-  return html
-    .replace(/<!--([\s\S]*?)-->/g, '')
-    .replace(/<br\s*\/?\s*>/gi, '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;|&#160;/gi, ' ')
-    .trim() === '';
 }
 
 export function sanitizedRichHtml(value, maxLength = CONTENT_LIMITS.richHtml) {

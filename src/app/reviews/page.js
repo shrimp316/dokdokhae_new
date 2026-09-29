@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny } from '@/lib/searchUtils';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { isEmptyRichHtml } from '@/lib/html';
 import ReviewCard from '@/components/ReviewCard';
 import { Star } from 'lucide-react';
 import styles from './reviews.module.css';
@@ -58,7 +59,7 @@ export default function ReviewsPage() {
   }
 
   async function handleEdit(reviewId) {
-    if (!editContent || editContent === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    if (isEmptyRichHtml(editContent)) { alert('내용을 입력해주세요.'); return; }
     try {
       const result = await authenticatedJsonFetch(`/api/content/reviews/${encodeURIComponent(reviewId)}`, {
         method: 'PATCH',

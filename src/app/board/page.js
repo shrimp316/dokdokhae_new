@@ -11,6 +11,7 @@ import SearchBar from '@/components/SearchBar';
 import { stripHtml, matchAny, extractFirstImage } from '@/lib/searchUtils';
 import { sanitizeHtmlForStorage } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { isEmptyRichHtml } from '@/lib/html';
 import dynamic from 'next/dynamic';
 import { X, Pencil, Save } from 'lucide-react';
 import styles from './board.module.css';
@@ -125,7 +126,7 @@ export default function BoardPage() {
     if (!user) { router.push('/login'); return; }
     if (!profile) { alert('프로필 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
     if (!title.trim()) { alert('제목을 입력해주세요.'); return; }
-    if (!content || content === '<p><br></p>') { alert('내용을 입력해주세요.'); return; }
+    if (isEmptyRichHtml(content)) { alert('내용을 입력해주세요.'); return; }
     setSubmitting(true);
     try {
       const result = await authenticatedJsonFetch('/api/content/board', {

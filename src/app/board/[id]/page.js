@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 
 import { dangerousHtml } from '@/lib/sanitize.client';
 import { authenticatedJsonFetch } from '@/lib/authenticatedFetch';
+import { isEmptyRichHtml } from '@/lib/html';
 import ContentLightbox from '@/components/ContentLightbox';
 import CommentSection from '@/components/CommentSection';
 import LikeBurst from '@/components/LikeBurst';
@@ -69,7 +70,7 @@ export default function BoardPostPage({ params }) {
   }
 
   async function handleEdit() {
-    if (!editTitle.trim() || !editContent) { alert('제목과 내용을 입력해주세요.'); return; }
+    if (!editTitle.trim() || isEmptyRichHtml(editContent)) { alert('제목과 내용을 입력해주세요.'); return; }
     try {
       const result = await authenticatedJsonFetch(`/api/content/board/${encodeURIComponent(id)}`, {
         method: 'PATCH',
